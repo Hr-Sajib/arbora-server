@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF A4 Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background-color: #ccc;
+        padding: 20px;
+        margin: 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+
+      .page {
+        width: 794px; /* A4 width at 96dpi */
+        height: 1123px; /* A4 height at 96dpi */
+        margin: 0 auto 40px auto;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      .content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        text-align: center;
+        padding: 20px;
+        width: 80%;
+        background: rgba(0, 0, 0, 0.4); /* Optional overlay */
+      }
+      .about-us {
+        padding: 60px;
+        padding-top: 160px;
+        text-align: justify;
+        line-height: 1.6;
+        font-size: 16px;
+        color: #0b541d;
+      }
+
+      .content h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+      }
+
+      .content p {
+        font-size: 18px;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Page 1 -->
+    <div
+      class="page"
+      style="background-image: url('../public/images/firstPage.jpeg')"
+    >
+      <!-- no change needed here  -->
+    </div>
+
+    <!-- Page 2 -->
+    <div
+      class="page"
+      style="background-image: url('../public/images/bodyCover.jpeg')"
+    >
+      <!-- Second Page: About Us -->
+      <div class="page">
+        <div class="about-us">
+          <h2 class="about-title">About Us</h2>
+          <p>
+            At Arbora Packaging: Where Packaging Meets Purpose, we believe that
+            every package tells a story — one of sustainability, responsibility,
+            and care for our planet. Since our founding, we’ve been committed to
+            providing eco-friendly packaging solutions that make a difference,
+            helping businesses and households reduce their environmental
+            footprint.
+          </p>
+          <p>
+            We proudly serve restaurants, hotels, caterers, and homeowners
+            across the United States, delivering high-quality packaging products
+            that are as functional as they are sustainable. Our products are
+            made from biodegradable sugarcane pulp, offering a greener
+            alternative without compromising on performance or durability.
+          </p>
+          <h3 class="section-title">Our Mission</h3>
+          <p>
+            To empower our customers to embrace an eco-friendly lifestyle by
+            making sustainable packaging accessible, reliable, and
+            cost-effective. Every order you place with Arbora Packaging is a
+            step toward a cleaner and healthier planet.
+          </p>
+          <h3 class="section-title">Why Choose Arbora Packaging?</h3>
+          <ul style="margin-left: 20px; padding-left: 0">
+            <li>
+              100% Product Confidence – We guarantee quality and performance in
+              every item we manufacture and distribute.
+            </li>
+            <li>
+              On-Time Delivery – Your business runs on schedules, and so do we.
+              Count on us for prompt, reliable service.
+            </li>
+            <li>
+              Nationwide Reach – No matter where you are in the U.S., Arbora
+              Packaging is your trusted partner for sustainable packaging
+              solutions.
+            </li>
+            <li>
+              Planet-Friendly Materials – Our biodegradable products return to
+              the earth without harming it, closing the loop on waste.
+            </li>
+          </ul>
+          <p>
+            Join us in creating a future where packaging protects both what’s
+            inside and the world outside. With Arbora Packaging, going green has
+            never been easier.
+          </p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Page 3... -->
+    <div
+      class="page"
+      style="background-image: url('../public/images/bodyCover.jpeg')"
+    ></div>
+
+    <!-- Page 2nd last -->
+    <div
+      class="page"
+      style="background-image: url('../public/images/prods.jpeg')"
+    ></div>
+
+    <!-- Page last -->
+    <div
+      class="page"
+      style="background-image: url('../public/images/lastPage.jpeg')"
+    ></div>
+  </body>
+</html>
