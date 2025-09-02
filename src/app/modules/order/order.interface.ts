@@ -21,6 +21,7 @@ export interface IOrder {
 
   orderStatus: "verified" | "completed" | "cancelled";
   paymentStatus: "paid" | "notPaid" | "partiallyPaid" | "overPaid";
+  deliveryDoc: string,
   // salesPerson: Types.ObjectId
 
   products: {

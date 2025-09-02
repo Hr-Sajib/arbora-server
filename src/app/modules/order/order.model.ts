@@ -31,6 +31,7 @@ const orderSchema = new Schema<IOrder>(
       enum: ["paid", "notPaid", "partiallyPaid", "overPaid"],
       default: "notPaid",
     },
+    deliveryDoc: {type: String, default: null },
     products: [
       {
         productId: {

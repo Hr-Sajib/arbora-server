@@ -884,6 +884,8 @@ const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
   }
   
 
+  console.log("\n\nupdate data payload: ", payload)
+
   let totalSalesPrice = 0;
   let totalPurchasePrice = 0;
   let discountGiven = 0;
@@ -949,6 +951,10 @@ const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
     }
   }
 
+  if(existingOrder.orderStatus !== 'completed' && !payload.deliveryDoc){
+      throw new AppError(httpStatus.BAD_REQUEST, "Need to upload signed delivery document while completing an order!");
+  }
+
   const totalPayable =
     orderAmount +
     (payload.shippingCharge
@@ -968,6 +974,7 @@ const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
     orderAmount,
     totalPayable: totalPayable,
     orderStatus: payload.orderStatus,
+    deliveryDoc: payload.deliveryDoc,
     shippingCharge: payload.shippingCharge,
     paymentAmountReceived:
       payload.paymentAmountReceived || existingOrder.paymentAmountReceived,
