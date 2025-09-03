@@ -5,6 +5,8 @@ import { Request, Response } from "express";
 import { CustomerServices } from "./customer.service";
 import { CustomerModel } from "./customer.model";
 import AppError from "../../errors/AppError";
+import { exportCustomersToExcel, exportGroupedProductsToExcel } from "../../utils/exportToExcel";
+import { ICustomer } from "./customer.interface";
 
 const createCustomer = catchAsync(async (req: Request, res: Response) => {
   const body = req.body;
@@ -114,6 +116,35 @@ const generatePallet = catchAsync(async (req: Request, res: Response) => {
 
 
 
+// Get customers xl
+
+
+const generateXlforAllCustomers = catchAsync(
+  async (req: Request, res: Response) => {
+    console.log("Generating XL for all customers...");
+    const result = await CustomerModel.find();
+    console.log("Fetched customers count:", result.length);
+
+    // ✅ Check if client wants Excel export
+    const shouldDownload = req.query.download === "true";
+    console.log("Should download Excel:", shouldDownload);
+
+    if (shouldDownload) {
+      console.log("Exporting Excel with data:", result.slice(0, 2)); // Log first 2 items for brevity
+      return exportCustomersToExcel(result as ICustomer[], res);
+    }
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Customers retrieved successfully",
+      data: result,
+    });
+  }
+);
+
+
+
 
 export const CustomerControllers = {
   createCustomer,
@@ -122,5 +153,6 @@ export const CustomerControllers = {
   updateCustomer,
   deleteCustomer,
   sendEmailForNotPaidOrders,
-  generatePallet
+  generatePallet,
+  generateXlforAllCustomers
 };

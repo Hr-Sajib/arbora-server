@@ -3,7 +3,11 @@
       "_id": "68926530905bc3a1885101a5",
       "storeName": "Curry Up Now -  Ekam Gourmet Kitchens 1 LLC",
       "storePhone": "(214)222-5596",
+
+
       "storePersonEmail": "hrsajib001@gmail.com",
+      
+      
       "salesTaxId": "32080442521",
       "acceptedDeliveryDays": ["thursday"],
       "isCustomerSourceProspect": false,
@@ -37,19 +41,19 @@
           "invoiceNumber": "INV-28431",
           "PONumber": "ORD-6",
           "storeId": "68926530905bc3a1885101a5",
-          "paymentDueDate": "2025-07-24",
+          "paymentDueDate": "2025-09-07",
           "totalPayable": 161,
           "shippingDate": "2025-07-24",
           "orderAmount": 151,
           "shippingCharge": 10,
-          "orderStatus": "completed",
+          "orderStatus": "verified",
           "isDeleted": false,
-          "paymentAmountReceived": 161,
+          "paymentAmountReceived": 0,
           "discountGiven": 0,
-          "openBalance": 0,
+          "openBalance": 161,
           "profitAmount": 50.360000000000014,
           "profitPercentage": 50.04,
-          "paymentStatus": "paid",
+          "paymentStatus": "unpaid",
           "products": [
             { "productId": "68926708905bc3a1885101c8", "quantity": 1, "discount": 0, "_id": "6893fc5f344394515c181774" },
             { "productId": "689266be905bc3a1885101c1", "quantity": 1, "discount": 0, "_id": "6893fc5f344394515c181775" },

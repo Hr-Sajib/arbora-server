@@ -41,8 +41,9 @@ async function bootstrap() {
       console.log(`🚀 Application is running on port ${config.port}`);
     });
 
-    // Schedule the task to run daily at 08:00 AM local time (+06)
-    cron.schedule('13 6 * * *', () => {
+    // Schedule the task to run daily at local time (+06)
+    cron.schedule('6 15 * * *', () => {
+      console.log(`[CRON STARTED] Payment due reminder job triggered at: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}`);
       CustomerServices.sendPaymentDueReminders().catch((error) =>
         console.error('Cron job failed:', error)
       );

@@ -15,6 +15,12 @@ router.get("/",
   CustomerControllers.getAllCustomers);
 
 router.get(
+  "/all-customers-excel",
+  auth("admin"),
+  CustomerControllers.generateXlforAllCustomers
+);
+
+router.get(
   "/:id",
   auth("admin"),
   CustomerControllers.getSingleCustomer

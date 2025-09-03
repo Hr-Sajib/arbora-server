@@ -194,6 +194,8 @@ export const sendPaymentDueEmail = async ({
   unpaidOrders: any[];
   customerName: string;
 }) => {
+
+  console.log("email sending to customer.... ",storePersonEmail)
   // Read the logo image from the public folder as base64
   const logoPath = "public/images/logo.png";
   const logoBase64 = await fs.readFile(logoPath, { encoding: "base64" });

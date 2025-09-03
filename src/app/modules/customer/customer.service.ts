@@ -12,6 +12,7 @@ import {
 } from "../../utils/sendMail";
 import { generatePdf } from "../../utils/pdfCreate";
 import fs from "fs/promises"; // Use fs.promises for async/await support
+import { IOrder } from "../order/order.interface";
 
 const createCustomerIntoDB = async (payLoad: ICustomer) => {
   const { storeName } = payLoad;
@@ -291,80 +292,77 @@ const generatePallet = async (customerId: string): Promise<Buffer> => {
   return pdfBuffer;
 };
 
+
 const sendPaymentDueReminders = async () => {
+  console.log("emailing function ran...");
+
   try {
-    // Fetch all customers from the database
-    // const customers = await CustomerModel.find().lean();
-    const customers = await fs.readFile("public/customers.json", "utf8");
+    // Debug: Log the start of reading customers data
+    console.log("Attempting to read customers data from public/customers.json");
+
+    // Read all customers from the public/customers.json file
+    const customersData = await fs.readFile("public/customers.json", "utf8");
+    console.log("Successfully read customers data:", customersData.slice(0, 100) + "..."); // Log first 100 chars for brevity
+
+    const customers = JSON.parse(customersData);
+    console.log("Parsed customers data into array, length:", customers.length);
 
     // Use current date for live execution
-    const currentDate = new Date();
-    const fiveDaysLater = new Date(currentDate);
-    fiveDaysLater.setDate(currentDate.getDate() + 5);
+    const currentDate = new Date("2025-09-03T15:01:00+06:00"); // Updated to current time
+    console.log("Current date set to:", currentDate.toISOString());
+
+    const reminderDate = new Date(currentDate);
+    reminderDate.setDate(currentDate.getDate() + 5);
+    console.log("Reminder date calculated (5 days later):", reminderDate.toISOString());
 
     for (const customer of customers) {
+      // Debug: Log customer processing start
+      console.log("Processing customer with ID:", customer._id);
+
       // Safely access customer data
-      const customerData = customer as any;
-      const customerId = customerData._id;
-      const customerName = customerData.storePersonName;
-      const storePersonEmail = customerData.storePersonEmail;
+      const customerData = customer;
+      console.log("Customer data accessed:", {
+        _id: customerData._id,
+        storePersonName: customerData.storePersonName,
+        storePersonEmail: customerData.storePersonEmail,
+      });
 
-      // Fetch relevant orders from the database for this customer
-      const relevantOrders = await OrderModel.find({
-        storeId: customerId,
-        paymentDueDate: {
-          $gte: currentDate,
-          $lte: fiveDaysLater,
-        },
-        paymentStatus: { $nin: ["paid", "overpaid"] },
-        openBalance: { $gt: 0 },
-        isDeleted: false,
-      }).lean();
+      // Find orders with openBalance > 0 and paymentDueDate exactly 5 days from now
+      console.log("Filtering orders for customer:", customer._id);
+      const relevantOrders = customerData.customerOrders.filter((order: IOrder) => {
+        const paymentDueDate = new Date(order.paymentDueDate);
+        console.log("Evaluating order:", order._id, "with due date:", paymentDueDate.toISOString(), "openBalance:", order.openBalance);
+        const isMatch =
+          paymentDueDate.toDateString() === reminderDate.toDateString() &&
+          order.openBalance > 0 &&
+          !["paid", "overpaid"].includes(order.paymentStatus) &&
+          !order.isDeleted;
+        console.log("Order match result:", isMatch);
+        return isMatch;
+      });
 
-      if (relevantOrders.length === 0) continue;
+      console.log("Found relevant orders count:", relevantOrders.length);
+
+      if (relevantOrders.length === 0) {
+        console.log("No relevant orders found for customer:", customer._id);
+        continue;
+      }
 
       // Prepare data for email
       const emailData = {
-        storePersonEmail,
+        storePersonEmail: customerData.storePersonEmail,
         unpaidOrders: relevantOrders,
-        customerName,
+        customerName: customerData.storePersonName,
       };
+      console.log("Prepared email data:", emailData);
 
-      // Send initial reminder (5 days prior)
+      // Send reminder for orders due in 5 days
+      console.log("Attempting to send email for customer:", customerData.storePersonName);
       await sendPaymentDueEmail(emailData);
-
-      // Schedule follow-up reminders every 2 days until paid
-      for (const order of relevantOrders) {
-        const dueDate = new Date(order.paymentDueDate);
-        let reminderDate = new Date(dueDate);
-        reminderDate.setDate(dueDate.getDate() - 5); // Start 5 days prior
-
-        while (reminderDate <= currentDate) {
-          // Check if order is still unpaid using database
-          const updatedOrder = await OrderModel.findOne({
-            _id: order._id,
-            isDeleted: false,
-          }).lean();
-          if (
-            !updatedOrder ||
-            updatedOrder.paymentStatus === "paid" ||
-            updatedOrder.openBalance <= 0
-          ) {
-            break; // Stop reminders if paid or order not found
-          }
-
-          // Send reminder (email, text, or WhatsApp)
-          await sendPaymentDueEmail({
-            ...emailData,
-            unpaidOrders: [updatedOrder],
-          });
-
-          // Move to next reminder date (every 2 days) 1 for testing
-          reminderDate.setDate(reminderDate.getDate() + 1);
-        }
-      }
+      console.log("Email sent successfully for customer:", customerData.storePersonName);
     }
 
+    console.log("Completed processing all customers");
     return { message: "Payment due reminders processed" };
   } catch (error) {
     console.error("Error processing payment due reminders:", error);
@@ -372,6 +370,7 @@ const sendPaymentDueReminders = async () => {
   }
 };
 
+// Example execution (for testing)
 export const CustomerServices = {
   createCustomerIntoDB,
   getAllCustomersFromDB,
