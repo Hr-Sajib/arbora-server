@@ -155,6 +155,7 @@ export const exportCustomersToExcel = (customerData: ICustomer[], res: Response)
 
   // Add 1st row with header
   worksheetData.push([
+    "Store Name",
     "Store Phone",
     "Store Person Email",
     "Sales Tax ID",
@@ -175,11 +176,12 @@ export const exportCustomersToExcel = (customerData: ICustomer[], res: Response)
   ]);
 
   // Add 2nd row as empty
-  worksheetData.push(new Array(17).fill("")); // 17 columns based on header length
+  worksheetData.push(new Array(18).fill("")); // 18 columns based on updated header length
 
   // Add customer data starting from 3rd row
   customerData.forEach((customer: ICustomer) => {
     worksheetData.push([
+      customer.storeName,
       customer.storePhone,
       customer.storePersonEmail,
       customer.salesTaxId,
@@ -248,6 +250,7 @@ export const exportCustomersToExcel = (customerData: ICustomer[], res: Response)
 
   // Column widths
   worksheet["!cols"] = [
+    { wch: 35 }, // Store Name
     { wch: 15 }, // Store Phone
     { wch: 25 }, // Store Person Email
     { wch: 15 }, // Sales Tax ID

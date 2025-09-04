@@ -11,7 +11,8 @@ import {
   generateInvoiceNumber,
   generatePONumber,
 } from "../../utils/generateIds";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
+import { PaymentModel } from "../payment/payment.model";
 
 
 const createOrderIntoDB = async (payLoad: IOrder) => {
@@ -1000,45 +1001,70 @@ const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
   return updatedOrder;
 };
 
+
+
 const deleteOrderIntoDB = async (id: string) => {
-  const existingOrder = await OrderModel.findById(id).populate("products.productId");
+  const session = await OrderModel.startSession(); // Start a transaction session
+  session.startTransaction();
 
-  if (!existingOrder) {
-    throw new AppError(httpStatus.NOT_FOUND, "Order not found");
-  }
+  try {
+    const existingOrder = await OrderModel.findById(id).populate("products.productId").session(session);
 
-  // Restore product quantities only if order status is "verified"
-  if (existingOrder.orderStatus === "verified") {
-    try {
-      // Iterate through the products in the existing order
-      for (const orderProduct of existingOrder.products) {
-        const product = await ProductModel.findById(orderProduct.productId);
-        if (!product) {
-          throw new Error(`Product with ID ${orderProduct.productId} not found`);
-        }
-
-        // Add back the quantity from the deleted order
-        product.quantity += orderProduct.quantity;
-        await product.save();
-      }
-    } catch (error) {
-      console.error("Error restoring product quantities:", error);
-      throw new Error("Failed to restore product quantities for deleted order");
+    if (!existingOrder) {
+      throw new AppError(httpStatus.NOT_FOUND, "Order not found");
     }
+
+    // Restore product quantities only if order status is "verified"
+    if (existingOrder.orderStatus === "verified") {
+      try {
+        // Iterate through the products in the existing order
+        for (const orderProduct of existingOrder.products) {
+          const product = await ProductModel.findById(orderProduct.productId).session(session);
+          if (!product) {
+            throw new Error(`Product with ID ${orderProduct.productId} not found`);
+          }
+
+          // Add back the quantity from the deleted order
+          product.quantity += orderProduct.quantity;
+          await product.save({ session });
+        }
+      } catch (error) {
+        console.error("Error restoring product quantities:", error);
+        throw new Error("Failed to restore product quantities for deleted order");
+      }
+    }
+
+    // Delete corresponding payment documents
+    const paymentDeletionResult = await PaymentModel.deleteMany(
+      { forOrderId: new Types.ObjectId(id), idDeleted: false },
+      { session }
+    );
+    console.log(`Deleted ${paymentDeletionResult.deletedCount} payment documents for order ${id}`);
+
+    // Mark the order as deleted regardless of status
+    const result = await OrderModel.findByIdAndUpdate(
+      id,
+      { $set: { isDeleted: true } },
+      { new: true, session }
+    );
+
+    if (!result) {
+      throw new AppError(httpStatus.NOT_FOUND, "Order not found");
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error deleting order and payments:", error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to delete order and associated payments");
   }
-
-  // Mark the order as deleted regardless of status
-  const result = await OrderModel.findByIdAndUpdate(
-    id,
-    { $set: { isDeleted: true } },
-    { new: true }
-  );
-
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, "Order not found");
-  }
-
-  return result;
 };
 
 // Fetch all products grouped by category, considering only non-deleted products

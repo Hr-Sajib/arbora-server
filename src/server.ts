@@ -41,15 +41,17 @@ async function bootstrap() {
       console.log(`🚀 Application is running on port ${config.port}`);
     });
 
-    // Schedule the task to run daily at local time (+06)
-    cron.schedule('6 15 * * *', () => {
-      console.log(`[CRON STARTED] Payment due reminder job triggered at: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}`);
-      CustomerServices.sendPaymentDueReminders().catch((error) =>
-        console.error('Cron job failed:', error)
-      );
-    }, {
-      timezone: 'Asia/Dhaka' // Matches +06 time zone
-    });
+// Run every 2 days at 8:00 AM US Eastern Time
+cron.schedule('0 8 */2 * *', () => {
+  console.log(`[CRON STARTED] Payment due reminder job triggered at: ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}`);
+  
+  CustomerServices.sendPaymentDueReminders().catch((error) =>
+    console.error('Cron job failed:', error)
+  );
+}, {
+  timezone: 'America/New_York' // US Eastern Time
+});
+
 
     console.log('Payment due reminder scheduler started.');
 

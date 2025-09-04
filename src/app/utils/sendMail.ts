@@ -1,6 +1,8 @@
 import nodemailer from "nodemailer";
 import config from "../config";
 import * as fs from "node:fs/promises";
+import { Types } from "mongoose";
+import { ProductModel } from "../modules/product/product.model";
 
 export const sendMail = async ({
   to,
@@ -185,7 +187,160 @@ Arbora Team`;
 };
 
 
-export const sendPaymentDueEmail = async ({
+export const sendEarlyPaymentDueEmail = async ({
+  storePersonEmail,
+  unpaidOrders,
+  customerName,
+  }: {
+    storePersonEmail: string;
+    unpaidOrders: any[];
+    customerName: string;
+  }) => {
+  console.log("email sending to customer.... ", storePersonEmail);
+
+  // Use online-hosted images
+  const logoDataUrl = "https://i.ibb.co/spjM17CL/logo.png";
+  const paymentOptionPic1DataUrl = "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
+  const paymentOptionPic2DataUrl = "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
+
+  // Assume ProductModel is your Mongoose model for IProduct
+  const getProductName = async (productId: string) => {
+    try {
+      const product = await ProductModel.findOne({ _id: new Types.ObjectId(productId), isDeleted: false });
+      return product?.name || "Unknown Product";
+    } catch (error) {
+      console.error("Error fetching product name for productId:", productId, error);
+      return "Unknown Product";
+    }
+  };
+
+  // Process each unpaid order (assuming one email per customer with all relevant orders)
+  for (const order of unpaidOrders) {
+    const invoiceNumber = order.invoiceNumber;
+    const orderDate = new Date(order.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const poNumber = order.PONumber;
+    const paymentDueDate = new Date(order.paymentDueDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const totalPayable = order.totalPayable.toFixed(2);
+    const paymentAmountReceived = order.paymentAmountReceived.toFixed(2);
+    const openBalance = order.openBalance.toFixed(2);
+    const discountGiven = order.discountGiven.toFixed(2);
+
+    // Fetch product details asynchronously
+    const productDetailsPromises = order.products.map(async (product: any) => {
+      const productName = await getProductName(product.productId);
+      return `<li>${productName} - Quantity: ${product.quantity}</li>`;
+    });
+    const productDetails = (await Promise.all(productDetailsPromises)).join("");
+
+    const subject = `Friendly Reminder – Invoice ${invoiceNumber} Due in 5 Days`;
+
+    const text = `Dear ${customerName},
+
+I hope you’re doing well.
+Thank you for trusting us as your food distribution partner; we truly appreciate your continued support.
+This is a friendly reminder that Invoice ${invoiceNumber}, dated ${orderDate}, with PO# ${poNumber}, for a total payable of $${totalPayable}, has an open balance of $${openBalance} (Payment Received: $${paymentAmountReceived}, Discount Given: $${discountGiven}), due on ${paymentDueDate} just 5 days from today. The invoice is attached for your reference.
+
+Product Details:
+${(await Promise.all(order.products.map(async (product: any) => {
+  const productName = await getProductName(product.productId);
+  return `  - ${productName}: Quantity ${product.quantity}`;
+}))).join("\n")}
+
+If you’ve already arranged payment, please disregard this message. Otherwise, we kindly ask that the payment be completed by the due date to avoid any disruption in service.
+Should you have any questions or need clarification, feel free to reach out. We’re happy to assist.
+
+Payment Options:
+1. Make Check Payable to Veda Global LLC or Arbora Products:
+   Mail to: 11311 Harry Hines Blvd, Suite 514 Dallas, TX 75229
+2. Zelle: sales@arboraproducts.com
+3. Credit Card Payment: please add 3.5% convenience charge
+
+Thank you again for your valued partnership.
+Warm regards,
+Accounting Team
+972-901-9944
+11311 Harry Hines Blvd, Suite 514
+Dallas, TX 75229
+sales@arboraproducts.com`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img style="margin-left: 10px" src="${logoDataUrl}" alt="Arbora Logo" style="width: 168px;" />
+        </div>
+        <h2 style="color: #4CAF50; text-align: center;">Friendly Reminder 📩</h2>
+        <p style="font-size: 16px; color: #333;">
+          Dear ${customerName},
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          I hope you’re doing well.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          Thank you for trusting us as your food distribution partner; we truly appreciate your continued support.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          This is a friendly reminder that Invoice <b>${invoiceNumber}</b>, dated <b>${orderDate}</b>, with PO# <b>${poNumber}</b>, for a total payable of <b>$${totalPayable}</b>, has an open balance of <b>$${openBalance}</b>, due on <b>${paymentDueDate}</b> just 5 days from today. The invoice is attached for your reference.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          Product Details:
+        </p>
+        <ul style="font-size: 16px; color: #333; padding-left: 20px;">
+          ${productDetails}
+        </ul>
+        <p style="font-size: 16px; color: #333;">
+          If you’ve already arranged payment, please disregard this message. Otherwise, we kindly ask that the payment be completed by the due date to avoid any disruption in service.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          Should you have any questions or need clarification, feel free to reach out. We’re happy to assist.
+        </p>
+        <p style="font-size: 16px; color: #333; font-weight: bold;">Payment Options:</p>
+        <ol style="font-size: 16px; color: #333; padding-left: 20px;">
+          <li>
+            Make Check Payable to Veda Global LLC or Arbora Products:
+            <br />Mail to: 11311 Harry Hines Blvd, Suite 514 Dallas, TX 75229
+          </li>
+          <li>
+            Zelle: <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>
+            <br /><img src="${paymentOptionPic1DataUrl}" alt="Payment Option 1" style="width: 200px; margin-top: 10px;" />
+          </li>
+          <li>
+            Credit Card Payment: please add 3.5% convenience charge
+            <br /><img src="${paymentOptionPic2DataUrl}" alt="Payment Option 2" style="width: 200px; margin-top: 10px;" />
+          </li>
+        </ol>
+        <p style="font-size: 16px; color: #333;">
+          Thank you again for your valued partnership.
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center; margin-top: 30px;">
+          Warm regards,
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          Accounting Team
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          972-901-9944
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          11311 Harry Hines Blvd, Suite 514
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          Dallas, TX 75229
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>
+        </p>
+      </div>
+    `;
+
+    await sendMail({ to: storePersonEmail, subject, text, html });
+    console.log("Email sent successfully for invoice:", invoiceNumber);
+  }
+};
+
+
+
+
+export const sendCurrentDayPaymentDueEmail = async ({
   storePersonEmail,
   unpaidOrders,
   customerName,
@@ -194,73 +349,138 @@ export const sendPaymentDueEmail = async ({
   unpaidOrders: any[];
   customerName: string;
 }) => {
+  console.log("email sending to customer.... ", storePersonEmail);
 
-  console.log("email sending to customer.... ",storePersonEmail)
-  // Read the logo image from the public folder as base64
-  const logoPath = "public/images/logo.png";
-  const logoBase64 = await fs.readFile(logoPath, { encoding: "base64" });
-  const logoDataUrl = `data:image/png;base64,${logoBase64}`;
+  // Use online-hosted images (same as sendEarlyPaymentDueEmail)
+  const logoDataUrl = "https://i.ibb.co/spjM17CL/logo.png";
+  const paymentOptionPic1DataUrl = "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
+  const paymentOptionPic2DataUrl = "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
 
-  const subject = "Payment Due Reminder: Action Required";
-  const totalOpenBalance = unpaidOrders
-    .reduce((sum, order) => sum + order.openBalance, 0)
-    .toFixed(2);
+  // Assume ProductModel is your Mongoose model for IProduct
+  const getProductName = async (productId: string) => {
+    try {
+      const product = await ProductModel.findOne({ _id: new Types.ObjectId(productId), isDeleted: false });
+      return product?.name || "Unknown Product";
+    } catch (error) {
+      console.error("Error fetching product name for productId:", productId, error);
+      return "Unknown Product";
+    }
+  };
 
-  const orderDetails = unpaidOrders
-    .map(
-      (order) => `
-      <li>
-        Invoice #${order.invoiceNumber} - Open Balance: $${order.openBalance.toFixed(2)} (Due: ${new Date(order.paymentDueDate).toLocaleDateString('en-GB')})
-      </li>
-    `
-    )
-    .join("");
+  // Process each unpaid order (assuming one email per customer with all relevant orders)
+  for (const order of unpaidOrders) {
+    const invoiceNumber = order.invoiceNumber;
+    const orderDate = new Date(order.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const poNumber = order.PONumber;
+    const paymentDueDate = new Date(order.paymentDueDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const totalPayable = order.totalPayable.toFixed(2);
+    const paymentAmountReceived = order.paymentAmountReceived.toFixed(2);
+    const openBalance = order.openBalance.toFixed(2);
+    const discountGiven = order.discountGiven.toFixed(2);
 
-  const text = `Dear ${customerName},
+    // Fetch product details asynchronously
+    const productDetailsPromises = order.products.map(async (product: any) => {
+      const productName = await getProductName(product.productId);
+      return `<li>${productName} - Quantity: ${product.quantity}</li>`;
+    });
+    const productDetails = (await Promise.all(productDetailsPromises)).join("");
 
-This is a reminder about an outstanding balance of $${totalOpenBalance} on your orders with Arbora. Details are below:
+    const subject = `Invoice Payment Due Now`;
 
-${unpaidOrders
-  .map(
-    (order) =>
-      `Invoice #${order.invoiceNumber}: $${order.openBalance.toFixed(2)} (Due: ${new Date(order.paymentDueDate).toLocaleDateString('en-GB')})`
-  )
-  .join("\n")}
+    const text = `Dear ${customerName},
 
-Please settle the balance by the due date. Contact us at sales@arboraproducts.com for assistance.
+I hope this message finds you well. This is a friendly reminder that Invoice ${invoiceNumber}, dated ${orderDate}, with PO# ${poNumber}, in the amount of $${totalPayable}, has an open balance of $${openBalance} (Payment Received: $${paymentAmountReceived}, Discount Given: $${discountGiven}), is now due.
 
-Best regards,
-Arbora Team`;
+Please arrange payment at your earliest convenience to avoid any service interruptions. Payment can be made via Check, Zelle, Credit Card, or ACH. If you have already sent the payment, kindly disregard this notice.
+Should you have any questions or require a copy of the invoice, please don’t hesitate to contact me directly.
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <img style="margin-left: 10px" src="${logoDataUrl}" alt="Arbora Logo" style="width: 168px;" />
+Product Details:
+${(await Promise.all(order.products.map(async (product: any) => {
+  const productName = await getProductName(product.productId);
+  return `  - ${productName}: Quantity ${product.quantity}`;
+}))).join("\n")}
+
+Payment Options:
+1. Make Check Payable to Veda Global LLC or Arbora Products:
+   Mail to: 11311 Harry Hines Blvd, Suite 514 Dallas, TX 75229
+2. Zelle: sales@arboraproducts.com
+3. Credit Card Payment: please add 3.5% convenience charge
+
+Thank you again for your valued partnership.
+Warm regards,
+Accounting Team
+972-901-9944
+11311 Harry Hines Blvd, Suite 514
+Dallas, TX 75229
+sales@arboraproducts.com`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img style="margin-left: 10px" src="${logoDataUrl}" alt="Arbora Logo" style="width: 168px;" />
+        </div>
+        <h2 style="color: #4CAF50; text-align: center;">Invoice Payment Due Now 📩</h2>
+        <p style="font-size: 16px; color: #333;">
+          Dear ${customerName},
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          I hope this message finds you well.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          This is a friendly reminder that Invoice <b>${invoiceNumber}</b>, dated <b>${orderDate}</b>, with PO# <b>${poNumber}</b>, in the amount of <b>$${totalPayable}</b>, has an open balance of <b>$${openBalance}</b> (Payment Received: <b>$${paymentAmountReceived}</b>, Discount Given: <b>$${discountGiven}</b>), is now due.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          Please arrange payment at your earliest convenience to avoid any service interruptions. Payment can be made via Check, Zelle, Credit Card, or ACH. If you have already sent the payment, kindly disregard this notice.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          Should you have any questions or require a copy of the invoice, please don’t hesitate to contact me directly.
+        </p>
+        <p style="font-size: 16px; color: #333;">
+          Product Details:
+        </p>
+        <ul style="font-size: 16px; color: #333; padding-left: 20px;">
+          ${productDetails}
+        </ul>
+        <p style="font-size: 16px; color: #333; font-weight: bold;">Payment Options:</p>
+        <ol style="font-size: 16px; color: #333; padding-left: 20px;">
+          <li>
+            Make Check Payable to Veda Global LLC or Arbora Products:
+            <br />Mail to: 11311 Harry Hines Blvd, Suite 514 Dallas, TX 75229
+          </li>
+          <li>
+            Zelle: <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>
+            <br /><img src="${paymentOptionPic1DataUrl}" alt="Payment Option 1" style="width: 200px; margin-top: 10px;" />
+          </li>
+          <li>
+            Credit Card Payment: please add 3.5% convenience charge
+            <br /><img src="${paymentOptionPic2DataUrl}" alt="Payment Option 2" style="width: 200px; margin-top: 10px;" />
+          </li>
+        </ol>
+        <p style="font-size: 16px; color: #333;">
+          Thank you again for your valued partnership.
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center; margin-top: 30px;">
+          Warm regards,
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          Accounting Team
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          972-901-9944
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          11311 Harry Hines Blvd, Suite 514
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          Dallas, TX 75229
+        </p>
+        <p style="font-size: 14px; color: #777; text-align: center;">
+          <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>
+        </p>
       </div>
-      <h2 style="color: #4CAF50; text-align: center;">Payment Due Reminder 📩</h2>
-      <p style="font-size: 16px; color: #333;">
-        Dear ${customerName},
-      </p>
-      <p style="font-size: 16px; color: #333;">
-        This is a reminder of an outstanding balance of <b>$${totalOpenBalance}</b> on your orders with Arbora, due within the next 5 days.
-      </p>
-      <p style="font-size: 16px; color: #333;">
-        Please review the details below:
-      </p>
-      <ul style="font-size: 16px; color: #333; padding-left: 20px;">
-        ${orderDetails}
-      </ul>
-      <p style="font-size: 16px; color: #333;">
-        We kindly request you to settle this balance by the due date. For any questions or assistance, please contact us at <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>.
-      </p>
-      <p style="font-size: 14px; color: #777; text-align: center; margin-top: 30px;">
-        Thank you for your prompt attention.
-      </p>
-      <p style="font-size: 14px; color: #777; text-align: center;">
-        - Arbora Team
-      </p>
-    </div>
-  `;
+    `;
 
-  await sendMail({ to: storePersonEmail, subject, text, html });
+    await sendMail({ to: storePersonEmail, subject, text, html });
+    console.log("Email sent successfully for invoice:", invoiceNumber);
+  }
 };

@@ -8,7 +8,8 @@ import { Types } from "mongoose";
 import { PaymentModel } from "../payment/payment.model";
 import {
   sendOpenBalanceEmail,
-  sendPaymentDueEmail,
+  sendEarlyPaymentDueEmail,
+  sendCurrentDayPaymentDueEmail,
 } from "../../utils/sendMail";
 import { generatePdf } from "../../utils/pdfCreate";
 import fs from "fs/promises"; // Use fs.promises for async/await support
@@ -293,22 +294,103 @@ const generatePallet = async (customerId: string): Promise<Buffer> => {
 };
 
 
+// const sendPaymentDueReminders = async () => {
+//   console.log("emailing function ran...");
+
+//   try {
+//     // Debug: Log the start of reading customers data
+//     console.log("Attempting to read customers data from public/customers.json");
+
+//     // Read all customers from the public/customers.json file
+//     const customersData = await fs.readFile("public/customers.json", "utf8");
+//     console.log("Successfully read customers data:", customersData.slice(0, 100) + "..."); // Log first 100 chars for brevity
+
+//     const customers = JSON.parse(customersData);
+//     console.log("Parsed customers data into array, length:", customers.length);
+
+//     // Use current date for live execution
+//     const currentDate = new Date("2025-09-03T15:01:00+06:00"); // Updated to current time
+//     console.log("Current date set to:", currentDate.toISOString());
+
+//     const reminderDate = new Date(currentDate);
+//     reminderDate.setDate(currentDate.getDate() + 5);
+//     console.log("Reminder date calculated (5 days later):", reminderDate.toISOString());
+
+//     for (const customer of customers) {
+//       // Debug: Log customer processing start
+//       console.log("Processing customer with ID:", customer._id);
+
+//       // Safely access customer data
+//       const customerData = customer;
+//       console.log("Customer data accessed:", {
+//         _id: customerData._id,
+//         storePersonName: customerData.storePersonName,
+//         storePersonEmail: customerData.storePersonEmail,
+//       });
+
+//       // Find orders with openBalance > 0 and paymentDueDate earlier than reminderDate
+//       console.log("Filtering orders for customer:", customer._id);
+//       const relevantOrders = customerData.customerOrders.filter((order: IOrder) => {
+//         const paymentDueDate = new Date(order.paymentDueDate);
+//         console.log("Evaluating order:", order._id, "with due date:", paymentDueDate.toISOString(), "openBalance:", order.openBalance);
+//         const isMatch =
+//           paymentDueDate.getTime() < reminderDate.getTime() && // Compare timestamps
+//           order.openBalance > 0 &&
+//           !["paid", "overpaid"].includes(order.paymentStatus) &&
+//           !order.isDeleted;
+//         console.log("Order match result:", isMatch);
+//         return isMatch;
+//       });
+
+//       console.log("Found relevant orders count:", relevantOrders.length);
+
+//       if (relevantOrders.length === 0) {
+//         console.log("No relevant orders found for customer:", customer._id);
+//         continue;
+//       }
+
+//       // Prepare data for email
+//       const emailData = {
+//         storePersonEmail: customerData.storePersonEmail,
+//         unpaidOrders: relevantOrders,
+//         customerName: customerData.storePersonName,
+//       };
+//       console.log("Prepared email data:", emailData);
+
+//       // Send reminder for orders due earlier than reminder date
+//       console.log("Attempting to send email for customer:", customerData.storePersonName);
+//       await sendEarlyPaymentDueEmail(emailData);
+//       console.log("Email sent successfully for customer:", customerData.storePersonName);
+//     }
+
+//     console.log("Completed processing all customers");
+//     return { message: "Payment due reminders processed" };
+//   } catch (error) {
+//     console.error("Error processing payment due reminders:", error);
+//     throw error;
+//   }
+// };
+
+// Example execution (for testing)
+
+
+
 const sendPaymentDueReminders = async () => {
   console.log("emailing function ran...");
 
   try {
     // Debug: Log the start of reading customers data
-    console.log("Attempting to read customers data from public/customers.json");
+    console.log("Attempting to read customers data from database");
 
-    // Read all customers from the public/customers.json file
-    const customersData = await fs.readFile("public/customers.json", "utf8");
-    console.log("Successfully read customers data:", customersData.slice(0, 100) + "..."); // Log first 100 chars for brevity
+    // Fetch all customers from the database
+    const customersData = await CustomerServices.getAllCustomersFromDB();
+    console.log("Successfully read customers data:", customersData);
 
-    const customers = JSON.parse(customersData);
-    console.log("Parsed customers data into array, length:", customers.length);
+    const customers = customersData; // No need for JSON.parse
+    console.log("Processed customers data, length:", customers.length);
 
     // Use current date for live execution
-    const currentDate = new Date("2025-09-03T15:01:00+06:00"); // Updated to current time
+    const currentDate = new Date();
     console.log("Current date set to:", currentDate.toISOString());
 
     const reminderDate = new Date(currentDate);
@@ -327,39 +409,64 @@ const sendPaymentDueReminders = async () => {
         storePersonEmail: customerData.storePersonEmail,
       });
 
-      // Find orders with openBalance > 0 and paymentDueDate exactly 5 days from now
-      console.log("Filtering orders for customer:", customer._id);
-      const relevantOrders = customerData.customerOrders.filter((order: IOrder) => {
+      // Filter orders due today for current day reminders
+      console.log("Filtering orders due today for customer:", customer._id);
+      const currentDayOrders: IOrder[] = customerData.customerOrders.filter((order: IOrder) => {
         const paymentDueDate = new Date(order.paymentDueDate);
-        console.log("Evaluating order:", order._id, "with due date:", paymentDueDate.toISOString(), "openBalance:", order.openBalance);
+        console.log("Evaluating order for current day:", order._id, "with due date:", paymentDueDate.toISOString(), "openBalance:", order.openBalance);
         const isMatch =
-          paymentDueDate.toDateString() === reminderDate.toDateString() &&
+          paymentDueDate.toDateString() === currentDate.toDateString() &&
           order.openBalance > 0 &&
-          !["paid", "overpaid"].includes(order.paymentStatus) &&
+          !["paid", "overpaid"].includes(order.paymentStatus.toLowerCase()) && // Case-insensitive check
           !order.isDeleted;
-        console.log("Order match result:", isMatch);
+        console.log("Current day order match result:", isMatch);
         return isMatch;
       });
 
-      console.log("Found relevant orders count:", relevantOrders.length);
+      console.log("Found current day orders count:", currentDayOrders.length);
 
-      if (relevantOrders.length === 0) {
-        console.log("No relevant orders found for customer:", customer._id);
-        continue;
-      }
+      // Filter orders due earlier than reminder date for early reminders
+      console.log("Filtering orders for early reminders for customer:", customer._id);
+      const earlyReminderOrders: IOrder[] = customerData.customerOrders.filter((order: IOrder) => {
+        const paymentDueDate = new Date(order.paymentDueDate);
+        console.log("Evaluating order for early reminder:", order._id, "with due date:", paymentDueDate.toISOString(), "openBalance:", order.openBalance);
+        const isMatch =
+          paymentDueDate < reminderDate &&
+          order.openBalance > 0 &&
+          !["paid", "overpaid"].includes(order.paymentStatus.toLowerCase()) && // Case-insensitive check
+          !order.isDeleted;
+        console.log("Early reminder order match result:", isMatch);
+        return isMatch;
+      });
 
-      // Prepare data for email
+      console.log("Found early reminder orders count:", earlyReminderOrders.length);
+
+      // Prepare data for email with explicit typing
       const emailData = {
         storePersonEmail: customerData.storePersonEmail,
-        unpaidOrders: relevantOrders,
+        unpaidOrders: [] as IOrder[], // Explicitly typed as IOrder[]
         customerName: customerData.storePersonName,
       };
-      console.log("Prepared email data:", emailData);
 
-      // Send reminder for orders due in 5 days
-      console.log("Attempting to send email for customer:", customerData.storePersonName);
-      await sendPaymentDueEmail(emailData);
-      console.log("Email sent successfully for customer:", customerData.storePersonName);
+      // Send current day reminders
+      if (currentDayOrders.length > 0) {
+        emailData.unpaidOrders = currentDayOrders;
+        console.log("Attempting to send current day email for customer:", customerData.storePersonName);
+        await sendCurrentDayPaymentDueEmail(emailData);
+        console.log("Current day email sent successfully for customer:", customerData.storePersonName);
+      }
+
+      // Send early reminders
+      if (earlyReminderOrders.length > 0) {
+        emailData.unpaidOrders = earlyReminderOrders;
+        console.log("Attempting to send early payment email for customer:", customerData.storePersonName);
+        await sendEarlyPaymentDueEmail(emailData);
+        console.log("Early payment email sent successfully for customer:", customerData.storePersonName);
+      }
+
+      if (currentDayOrders.length === 0 && earlyReminderOrders.length === 0) {
+        console.log("No relevant orders found for customer:", customer._id);
+      }
     }
 
     console.log("Completed processing all customers");
@@ -370,7 +477,7 @@ const sendPaymentDueReminders = async () => {
   }
 };
 
-// Example execution (for testing)
+
 export const CustomerServices = {
   createCustomerIntoDB,
   getAllCustomersFromDB,
