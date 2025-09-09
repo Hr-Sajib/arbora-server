@@ -8,6 +8,8 @@ import { UserModel } from "../user/user.model";
 import { ProductModel } from "../product/product.model";
 import { sendMail } from "../../utils/sendMail";
 import * as fs from "node:fs/promises";
+import { CustomerServices } from "../customer/customer.service";
+import { ICustomer } from "../customer/customer.interface";
 
 
 const createProspectIntoDB = async (payload: IProspect) => {
@@ -119,35 +121,35 @@ const makeCustomerFromProspect = async (id: string) => {
     throw new AppError(httpStatus.NOT_FOUND, "Prospect not found or already deleted");
   }
 
-
-  const customerData = {
+  const customerData: ICustomer = {
     storeName: prospect.storeName,
-    isCustomerSourceProspect: true,
     storePhone: prospect.storePhone || "N/A",
-    storePersonEmail: prospect.storePersonEmail || "prospect@example.com",
+    storePersonEmail: prospect.storePersonEmail || "N/A",
     salesTaxId: prospect.salesTaxId || "N/A",
-    acceptedDeliveryDays: ["monday"], // default to Monday
-    bankACHAccountInfo: "N/A", // default value
+    acceptedDeliveryDays: ["monday"], // Default to Monday as an array of valid days
+    bankACHAccountInfo: "N/A",
     storePersonName: prospect.storePersonName || "N/A",
     storePersonPhone: prospect.storePersonPhone || "N/A",
     billingAddress: prospect.shippingAddress || "N/A",
     billingState: prospect.shippingState || "N/A",
     billingZipcode: prospect.shippingZipcode || "N/A",
     billingCity: prospect.shippingCity || "N/A",
+    isCustomerSourceProspect: true,
     shippingAddress: prospect.shippingAddress || "N/A",
     shippingState: prospect.shippingState || "N/A",
     shippingZipcode: prospect.shippingZipcode || "N/A",
     shippingCity: prospect.shippingCity || "N/A",
-    creditApplication: "N/A", // default value
-    ownerLegalFrontImage: prospect.miscellaneousDocImage || "https://i.postimg.cc/fRyv1Djb/doc.png",
-    ownerLegalBackImage: prospect.miscellaneousDocImage || "https://i.postimg.cc/fRyv1Djb/doc.png",
-    voidedCheckImage: prospect.miscellaneousDocImage || "https://i.postimg.cc/fRyv1Djb/doc.png",
-    miscellaneousDocImage: prospect.miscellaneousDocImage || undefined,
+    creditApplication: "N/A",
+    ownerLegalFrontImage: prospect.miscellaneousDocImage || "N/A", // Default to "N/A" if null/undefined
+    ownerLegalBackImage: prospect.miscellaneousDocImage || "N/A", // Default to "N/A" if null/undefined
+    voidedCheckImage: prospect.miscellaneousDocImage || "N/A", // Default to "N/A" if null/undefined
     isDeleted: false,
+    miscellaneousDocImage: prospect.miscellaneousDocImage || undefined,
+    note: prospect.note || "N/A",
   };
 
-  // Create the customer
-  const createdCustomer = await CustomerModel.create(customerData);
+  // Create the customer using the existing service function
+  const createdCustomer = await CustomerServices.createCustomerIntoDB(customerData);
 
   // Mark prospect as converted
   await ProspectModel.findByIdAndUpdate(
@@ -158,6 +160,7 @@ const makeCustomerFromProspect = async (id: string) => {
 
   return createdCustomer;
 };
+
 
 const sendQuoteToProspect = async (prospectId: string) => {
 

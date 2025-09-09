@@ -6,7 +6,7 @@ export interface ICustomer {
     storePhone: string,
     storePersonEmail: string,
     salesTaxId: string,
-    acceptedDeliveryDays: ("saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday")[];
+    acceptedDeliveryDays?: ("saturday" | "sunday" | "monday" | "tuesday" | "wednesday" | "thursday" | "friday")[];
     bankACHAccountInfo: string,
     storePersonName: string,
     storePersonPhone: string,
