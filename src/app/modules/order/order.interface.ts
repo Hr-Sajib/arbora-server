@@ -22,13 +22,18 @@ export interface IOrder {
   orderStatus: "verified" | "completed" | "cancelled";
   paymentStatus: "paid" | "notPaid" | "partiallyPaid" | "overPaid";
   deliveryDoc: string,
-  // salesPerson: Types.ObjectId
-
   products: {
     productId: Types.ObjectId;
     quantity: number;
     price: number;
     discount: number;
   }[];
+
+
+  // reminders
+  isEmailSentBefore5daysOfDue: boolean;
+  isReminderPaused: boolean;
+  reminderNumber: number;
+
   isDeleted: boolean;
 }

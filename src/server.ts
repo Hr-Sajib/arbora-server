@@ -42,7 +42,7 @@ async function bootstrap() {
     });
 
 // Run daily at 3:45 AM Dhaka Time
-cron.schedule('33 3 * * *', () => {
+cron.schedule('16 7 * * *', () => {
   console.log(`[CRON STARTED] Payment due reminder job triggered at: ${new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}`);
   
   CustomerServices.sendPaymentDueReminders().catch((error) =>

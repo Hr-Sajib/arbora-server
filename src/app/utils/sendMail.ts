@@ -339,7 +339,6 @@ sales@arboraproducts.com`;
 
 
 
-
 export const sendCurrentDayPaymentDueEmail = async ({
   storePersonEmail,
   unpaidOrders,
@@ -351,7 +350,7 @@ export const sendCurrentDayPaymentDueEmail = async ({
 }) => {
   console.log("email sending to customer.... ", storePersonEmail);
 
-  // Use online-hosted images (same as sendEarlyPaymentDueEmail)
+  // Use online-hosted images
   const logoDataUrl = "https://i.ibb.co/spjM17CL/logo.png";
   const paymentOptionPic1DataUrl = "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
   const paymentOptionPic2DataUrl = "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
@@ -377,6 +376,7 @@ export const sendCurrentDayPaymentDueEmail = async ({
     const paymentAmountReceived = order.paymentAmountReceived.toFixed(2);
     const openBalance = order.openBalance.toFixed(2);
     const discountGiven = order.discountGiven.toFixed(2);
+    const reminderNumber = order.reminderNumber || 0; // Default to 0 if undefined
 
     // Fetch product details asynchronously
     const productDetailsPromises = order.products.map(async (product: any) => {
@@ -390,6 +390,8 @@ export const sendCurrentDayPaymentDueEmail = async ({
     const text = `Dear ${customerName},
 
 I hope this message finds you well. This is a friendly reminder that Invoice ${invoiceNumber}, dated ${orderDate}, with PO# ${poNumber}, in the amount of $${totalPayable}, has an open balance of $${openBalance} (Payment Received: $${paymentAmountReceived}, Discount Given: $${discountGiven}), is now due.
+
+${reminderNumber > 0 ? `Reminder number: ${reminderNumber}\nPlease note that we have attempted to contact you regarding this overdue payment.` : ''}
 
 Please arrange payment at your earliest convenience to avoid any service interruptions. Payment can be made via Check, Zelle, Credit Card, or ACH. If you have already sent the payment, kindly disregard this notice.
 Should you have any questions or require a copy of the invoice, please don’t hesitate to contact me directly.
@@ -429,6 +431,7 @@ sales@arboraproducts.com`;
         <p style="font-size: 16px; color: #333;">
           This is a friendly reminder that Invoice <b>${invoiceNumber}</b>, dated <b>${orderDate}</b>, with PO# <b>${poNumber}</b>, in the amount of <b>$${totalPayable}</b>, has an open balance of <b>$${openBalance}</b> (Payment Received: <b>$${paymentAmountReceived}</b>, Discount Given: <b>$${discountGiven}</b>), is now due.
         </p>
+        ${reminderNumber > 0 ? `<h3 style="font-size: 18px; color: #d32f2f; text-align: center;">Reminder number: ${reminderNumber}</h3><p style="font-size: 16px; color: #333;">Please note that we have attempted to contact you regarding this overdue payment.</p>` : ''}
         <p style="font-size: 16px; color: #333;">
           Please arrange payment at your earliest convenience to avoid any service interruptions. Payment can be made via Check, Zelle, Credit Card, or ACH. If you have already sent the payment, kindly disregard this notice.
         </p>

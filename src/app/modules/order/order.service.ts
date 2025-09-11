@@ -15,6 +15,7 @@ import mongoose, { Types } from "mongoose";
 import { PaymentModel } from "../payment/payment.model";
 
 
+
 const createOrderIntoDB = async (payLoad: IOrder) => {
   const { products, date, shippingCharge, shippingDate } = payLoad;
 
@@ -67,15 +68,14 @@ const createOrderIntoDB = async (payLoad: IOrder) => {
       }
 
       const salesPrice = product.price || 0;
-
       const purchasePrice = productDetails.purchasePrice || 0;
       const discount = product.discount || 0;
 
       totalSalesPrice += salesPrice * quantity;
-            // console.log("sales price: ",salesPrice," total price: ", totalSalesPrice)
-
       totalPurchasePrice += purchasePrice * quantity;
       discountGiven += discount;
+
+      console.log(`Product ${product.productId} - Sales Price: ${salesPrice}, Quantity: ${quantity}, Total Sales: ${totalSalesPrice}, Purchase Price: ${purchasePrice}, Total Purchase: ${totalPurchasePrice}, Discount: ${discount}, Total Discount: ${discountGiven}`);
 
       // Update product quantity
       await ProductModel.findByIdAndUpdate(
@@ -85,21 +85,26 @@ const createOrderIntoDB = async (payLoad: IOrder) => {
       );
     }
 
-    const orderAmount = totalSalesPrice - discountGiven;
-    const profitAmount = orderAmount - totalPurchasePrice;
+    const orderAmount = Number((totalSalesPrice - discountGiven).toFixed(2));
+    console.log(`Calculated orderAmount: ${totalSalesPrice} - ${discountGiven} = ${orderAmount}`);
+
+    const profitAmount = Number((orderAmount - totalPurchasePrice).toFixed(2));
+    console.log(`Calculated profitAmount: ${orderAmount} - ${totalPurchasePrice} = ${profitAmount}`);
+
     const profitPercentage =
       totalPurchasePrice > 0
         ? parseFloat(((profitAmount / totalPurchasePrice) * 100).toFixed(2))
         : 0;
-    const openBalance = orderAmount - (payLoad.paymentAmountReceived || 0);
+    console.log(`Calculated profitPercentage: (${profitAmount} / ${totalPurchasePrice}) * 100 = ${profitPercentage}%`);
+
+    const openBalance = Number((orderAmount - (payLoad.paymentAmountReceived || 0)).toFixed(2));
+    console.log(`Calculated openBalance: ${orderAmount} - ${payLoad.paymentAmountReceived || 0} = ${openBalance}`);
 
     const PONumber = await generatePONumber();
     const invoiceNumber = await generateInvoiceNumber(
       checkExistingStore.storeName,
       date
     );
-
-
 
     // Prepare order data
     const orderData = {
@@ -116,7 +121,7 @@ const createOrderIntoDB = async (payLoad: IOrder) => {
       openBalance,
       profitAmount,
       profitPercentage,
-      totalPayable: orderAmount,
+      totalPayable: orderAmount, // Assuming totalPayable equals orderAmount initially
       paymentStatus: payLoad.paymentStatus || "notPaid",
       products: payLoad.products,
       shippingCharge: shippingCharge,
@@ -124,8 +129,7 @@ const createOrderIntoDB = async (payLoad: IOrder) => {
 
     // Create order
     const createdOrder = await OrderModel.create([orderData], { session });
-
-    console.log("createdOrder: ___",createdOrder)
+    console.log("createdOrder: ___", createdOrder);
 
     // Commit the transaction
     await session.commitTransaction();
@@ -140,212 +144,8 @@ const createOrderIntoDB = async (payLoad: IOrder) => {
   }
 };
 
-// const generateOrderInvoicePdf = async (id: string): Promise<Buffer> => {
-//   // Fetch order with populated storeId and products.productId
-//   const order = await OrderModel.findOne({ _id: id, isDeleted: false })
-//     .populate({
-//       path: "products.productId",
-//       populate: { path: "categoryId" },
-//     })
-//     .populate("storeId")
-//     .lean();
 
-//   if (!order) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Order not found or deleted");
-//   }
 
-//   // Safely access customer data
-//   const customer = (order.storeId as any) || {};
-
-//   // Generate product rows
-//   const productRows = order.products
-//     .map((orderProduct, index) => {
-//       const product = (orderProduct.productId as any) || {};
-//       const category = product.categoryId.name || "N/A";
-//       const productNumber = product.productNumber || `PROD-${index + 1}`;
-//       const productName = product.name || "Unknown Product";
-//       const packSize = product.packetSize || "1";
-//       const description = `${productName} X ${packSize}`;
-//       const salesPrice = product.salesPrice || 0;
-//       const quantity = orderProduct.quantity || 1;
-//       const discount = orderProduct.discount || 0;
-//       const total = salesPrice * quantity - discount;
-//       return `
-//         <tr style="background-color: ${
-//           index % 2 === 0 ? "#ffffff" : "#f9f9f9"
-//         };">
-//           <td style="text-align:center; padding: 8px; border: 1px solid #ddd;">${
-//             index + 1
-//           }</td>
-//           <td style="padding: 8px; border: 1px solid #ddd;">${category}</td>
-//           <td style="padding: 8px; border: 1px solid #ddd;">${productNumber}</td>
-//           <td style="padding: 8px; border: 1px solid #ddd;">${description}</td>
-//           <td style="text-align:center; padding: 8px; border: 1px solid #ddd;">${quantity}</td>
-//           <td style="text-align:right; padding: 8px; border: 1px solid #ddd;">$${salesPrice.toFixed(
-//             2
-//           )}</td>
-//           <td style="text-align:right; padding: 8px; border: 1px solid #ddd;">$${total.toFixed(
-//             2
-//           )}</td>
-//         </tr>
-//       `;
-//     })
-//     .join("");
-
-//   // Read the logo image from the public folder as base64
-//   const logoPath = "public/images/logo.png"; // Adjust the relative path based on your project structure
-//   const logoBase64 = await fs.readFile(logoPath, { encoding: "base64" });
-//   const logoDataUrl = `data:image/png;base64,${logoBase64}`; // Updated to PNG format since the file is logo.png
-
-//   // Generate HTML content with embedded logo
-//   const htmlContent = `
-//     <html>
-//       <head>
-//         <style>
-//           body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; color: #333; margin: 0; padding: 10px; background-color: #fff; }
-//           .container { max-width: 800px; margin: 0 auto; }
-//           .header { text-align: center;height:100px;display: flex; justify-content: space-between; align-items: center; width: 100%; }
-//           .logo { width: 120px; margin-right: 10px; }
-//           .company-info { color: #555; font-size: 11px; }
-//           .contact-info { text-align: left; margin: 0 10px; }
-//           .invoice-title { background-color: #388E3C; color: #fff; padding: 10px 20px; border-radius: 4px; font-size: 14px; font-weight: bold; margin-left: 10px; margin-bottom: 55px; }
-//           .info-section { display: flex; justify-content: space-between; gap: 4px; margin: 20px 0; }
-//           .info-block { width: 48%; background-color: #f5f5f5; padding: 15px; border: 1px solid #ddd; border-radius: 4px; line-height: 1.2; }
-//           .info-block .label { font-weight: bold; color: #388E3C; }
-//           .product-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px}
-//           .product-table th { background-color: #388E3C; color: #fff; padding: 5px;font-size:12px; text-align: center; border: 1px solid #ddd; }
-//           .product-table td { padding: 8px; border: 1px solid #ddd;font-size: 13px }
-//           .totals-table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 20px 0; }
-//           .totals-table td { padding: 8px; border: 1px solid #ddd; }
-//           .totals-table .total-row { background-color: #E8F5E9; }
-//           .totals-table .label { font-weight: bold; text-align: left; }
-//           .totals-table .value { text-align: right; }
-//           .footer { text-align: center; font-size: 12px; color: #777; padding-top: 20px; border-top: 1px solid #ddd; }
-//           .invoice-details-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 4px; }
-//           .invoice-details-table td { padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; }
-//           .customer-table {margin-top: 30px; }
-//         </style>
-//       </head>
-//       <body>
-//         <div class="container">
-//           <div class="header">
-//             <div>
-//             <img style="margin-left: 10px" src="${logoDataUrl}" alt="Arbora Logo" class="logo" />
-//               <div class="invoice-title">Invoice</div>
-//             </div>
-//             <div class="contact-info">
-//               <p class="company-info">Arbora Products</p>
-//               <p class="company-info">11311 Harry Hines Blvd. Suite 514\nDallas TX 75229, USA</p>
-//               <p class="company-info">Email: sales@arboraproducts.com</p>
-//               <p class="company-info">https://arboraproducts.com</p>
-//               <p class="company-info">📞 972-901-9944</p>
-//             </div>
-//           </div>
-
-//           <table class="customer-table invoice-details-table">
-//             <tr>
-//               <td><b>Store</b></td>
-//               <td><b>Email</b></td>
-//               <td><b>Phone</b></td>
-//               <td><b>Shipping Date</b></td>
-//             </tr>
-//             <tr>
-//               <td>${customer.storeName || "N/A"}</td>
-//               <td>${customer.storePersonEmail || "N/A"}</td>
-//               <td>${customer.storePhone || "N/A"}</td>
-//               <td>${order.shippingDate || "N/A"}</td>
-//             </tr>
-//           </table>
-//           <div class="info-section">
-//             <div class="info-block">
-//               <div class="label">Bill To</div>
-//               <p>${customer.billingAddress || "N/A"}, City: ${
-//     customer.billingCity || "N/A"
-//   }, State: ${customer.billingState || "N/A"}, Zip: ${
-//     customer.billingZipcode || "N/A"
-//   }</p>
-//             </div>
-//             <div class="info-block">
-//               <div class="label">Ship To</div>
-//               <p>${customer.billingAddress || "N/A"}, City:  ${
-//     customer.billingCity || "N/A"
-//   }, State:  ${customer.billingState || "N/A"}, Zip:  ${
-//     customer.billingZipcode || "N/A"
-//   }</p>
-//             </div>
-//           </div>
-
-//           <table class="invoice-details-table">
-//             <tr>
-//               <td>Invoice No</td>
-//               <td>PO Number</td>
-//               <td>Order Date</td>
-//               <td>Due Date</td>
-//               <td>Payment Status</td>
-//             </tr>
-//             <tr>
-//               <td><b>${order.invoiceNumber || "N/A"}</b></td>
-//               <td><b>${order.PONumber || "N/A"}</b></td>
-//               <td><b>${order.date || "N/A"}</b></td>
-//               <td><b>${order.paymentDueDate || "N/A"}</b></td>
-//               <td><b>${order.paymentStatus || "N/A"}</b></td>
-//             </tr>
-//           </table>
-
-//           <table class="product-table">
-//             <thead>
-//               <tr>
-//                 <th>#</th>
-//                 <th>Category</th>
-//                 <th>Product No.</th>
-//                 <th>Description</th>
-//                 <th>Qty</th>
-//                 <th>Unit Price</th>
-//                 <th>Price</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               ${productRows}
-//             </tbody>
-//           </table>
-
-//           <table class="totals-table">
-//             <tr><td class="label">Subtotal:</td><td class="value">$${(
-//               (order.orderAmount || 0) + (order.discountGiven || 0)
-//             ).toFixed(2)}</td></tr>
-//             <tr><td class="label">Discount:</td><td class="value">$${
-//               order.discountGiven || "0"
-//             }</td></tr>
-//             <tr><td class="label">Total:</td><td class="value">$${(
-//               order.orderAmount || 0
-//             ).toFixed(2)}</td></tr>
-//             <tr><td class="label">Shipping Charge:</td><td class="value">$${
-//               order.shippingCharge || 0
-//             }</td></tr>
-//             <tr><td class="label">Total Payable:</td><td class="value">$${
-//               Number(order.shippingCharge) + order.orderAmount || 0
-//             }</td></tr>
-//             <tr><td class="label">Paid:</td><td class="value">$${
-//               order.paymentAmountReceived || 0
-//             }</td></tr>
-//             <tr><td class="label">Remaining Payable:</td><td class="value">$${
-//               order.openBalance || 0
-//             }</td></tr>
-//           </table>
-
-//           <div class="footer">
-//             Payments due by the due date | Overdue balances incur a 2% monthly interest | No returns after 14 days | Unpaid merchandise remains property of Arbora until fully paid.<br/>
-//             Thank you for choosing Arbora for your paper product needs!
-//           </div>
-//         </div>
-//       </body>
-//     </html>
-//   `;
-
-//   // Generate PDF using the utility function
-//   const pdfBuffer = await generatePdf(htmlContent);
-//   return pdfBuffer;
-// };
 
 const generateOrderInvoicePdf = async (id: string): Promise<Buffer> => {
   // Fetch order with populated storeId and products.productId
@@ -873,6 +673,8 @@ const getSingleOrderFromDB = async (id: string) => {
 };
 
 const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
+
+  console.log("order data received: ____________ :")
   // Fetch the existing order to get current products and payment values
   const existingOrder = await OrderModel.findById(id).populate(
     "products.productId"
@@ -952,7 +754,7 @@ const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
     }
   }
 
-  if(existingOrder.orderStatus !== 'completed' && !payload.deliveryDoc){
+  if(existingOrder.orderStatus !== 'completed' && payload.orderStatus == 'completed' && !payload.deliveryDoc){
       throw new AppError(httpStatus.BAD_REQUEST, "Need to upload signed delivery document while completing an order!");
   }
 

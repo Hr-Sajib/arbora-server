@@ -9,7 +9,6 @@ import AppError from "../../errors/AppError";
 const createPayment = catchAsync(async (req: Request, res: Response) => {
   const body = req.body;
 
-  console.log("________P: ",body)
   const result = await PaymentServices.createPaymentIntoDB(body);
 
   sendResponse(res, {
@@ -65,9 +64,9 @@ const updatePayment = catchAsync(async (req: Request, res: Response) => {
 
   const existingPayment = await PaymentModel.findById(id);
 
-  if (!existingPayment || existingPayment.idDeleted) {
-    throw new AppError(httpStatus.NOT_FOUND, "Payment not found");
-  }
+  // if (!existingPayment || existingPayment.idDeleted) {
+  //   throw new AppError(httpStatus.NOT_FOUND, "Payment not found");
+  // }
 
   const result = await PaymentServices.updatePaymentIntoDB(id, updatePayload);
 

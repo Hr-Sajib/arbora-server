@@ -19,7 +19,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   if (origin) {
     res.header("Access-Control-Allow-Origin", origin);
   } else {
-    res.header("Access-Control-Allow-Origin", ["http://localhost:3000","http://localhost:3001","https://arbona-client-rosy.vercel.app", "https://arbona-client-drab.vercel.app"]); 
+    res.header("Access-Control-Allow-Origin", ["http://localhost:3000","http://localhost:3001","https://admin.arborapackaging.com"]); 
   }
 
   res.header("Access-Control-Allow-Credentials", "true");

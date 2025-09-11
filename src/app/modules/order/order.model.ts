@@ -20,6 +20,14 @@ const orderSchema = new Schema<IOrder>(
       enum: ["verified", "completed", "cancelled"],
       default: "verified",
     },
+
+
+    isEmailSentBefore5daysOfDue: { type: Boolean, default: false },
+    isReminderPaused: { type: Boolean, default: false },
+    reminderNumber: { type: Number, default: 0 },
+    
+    
+    
     isDeleted: { type: Boolean, default: false },
     paymentAmountReceived: { type: Number, default: 0 },
     discountGiven: { type: Number, default: 0 },
