@@ -185,7 +185,7 @@ export const exportCustomersToExcel = (customerData: ICustomer[], res: Response)
       customer.storePhone,
       customer.storePersonEmail,
       customer.salesTaxId,
-      customer.acceptedDeliveryDays.join(", "),
+      customer?.acceptedDeliveryDays?.join(", "),
       customer.bankACHAccountInfo,
       customer.storePersonName,
       customer.storePersonPhone,
