@@ -93,7 +93,8 @@
         "createdAt": "2025-08-07T01:06:46.517Z",
         "updatedAt": "2025-08-07T01:08:25.253Z",
         "__v": 0,
-        "isEmailSentBefore5daysOfDue": true
+        "isEmailSentBefore5daysOfDue": true,
+        "reminderNumber": 1
       }
     ],
     "customerPayments": []

@@ -102,53 +102,48 @@ export const sendProspectDutyEmailToSalesPerson = async (
   await sendMail({ to: salesEmail, subject, text, html });
 };
 
-export const sendOpenBalanceEmail = async ({
+export const sendQuoteEmailToCustomer = async ({
   storePersonEmail,
-  unpaidOrders,
-  customerName
+  quoteList,
+  noteText,
 }: {
   storePersonEmail: string;
-  unpaidOrders: any[];
-  customerName: string
+  quoteList: { productName: string; quotePrice: number }[];
+  noteText: string;
 }) => {
   // Read the logo image from the public folder as base64
   const logoPath = "public/images/logo.png"; // Adjust the relative path based on your project structure
   const logoBase64 = await fs.readFile(logoPath, { encoding: "base64" });
   const logoDataUrl = `data:image/png;base64,${logoBase64}`; // Updated to PNG format since the file is logo.png
 
-  const subject = "Friendly Reminder: Outstanding Balance on Your Orders";
-  const totalOpenBalance = unpaidOrders
-    .reduce((sum, order) => sum + order.openBalance, 0)
+  const subject = "Special call up from Arbora";
+  const totalQuoteAmount = quoteList
+    .reduce((sum, item) => sum + item.quotePrice, 0)
     .toFixed(2);
 
-  const orderDetails = unpaidOrders
+  const quoteDetails = quoteList
     .map(
-      (order) => `
+      (item) => `
       <li>
-        Invoice #${
-          order.invoiceNumber
-        } - Open Balance: $${order.openBalance.toFixed(2)} (Due: ${
-        order.paymentDueDate
-      })
+        ${item.productName} - Quote Price: $${item.quotePrice.toFixed(2)}
       </li>
     `
     )
     .join("");
 
-  const text = `Dear ${customerName},
+  const text = `Dear Customer,
 
-We kindly remind you of an outstanding balance of $${totalOpenBalance} on your orders. Please find details below:
+We are pleased to provide you with the following product price quote:
 
-${unpaidOrders
-  .map(
-    (order) =>
-      `Invoice #${order.invoiceNumber}: $${order.openBalance.toFixed(
-        2
-      )} (Due: ${order.paymentDueDate})`
-  )
+${quoteList
+  .map((item) => `${item.productName}: $${item.quotePrice.toFixed(2)}`)
   .join("\n")}
 
-Please settle the balance at your earliest convenience. Feel free to contact us at sales@arboraproducts.com for assistance.
+Total Quote Amount: $${totalQuoteAmount}
+
+Note: ${noteText}
+
+Please let us know if you have any questions or would like to proceed with this quote. Contact us at sales@arboraproducts.com for further assistance.
 
 Best regards,
 Arbora Team`;
@@ -156,26 +151,29 @@ Arbora Team`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 20px;">
-            <img style="margin-left: 10px" src="${logoDataUrl}" alt="Arbora Logo" class="logo" />
+        <img style="margin-left: 10px" src="${logoDataUrl}" alt="Arbora Logo" class="logo" />
       </div>
-      <h2 style="color: #4CAF50; text-align: center;">Friendly Reminder 📩</h2>
+      <h2 style="color: #4CAF50; text-align: center;">Product Price Quote 📦</h2>
       <p style="font-size: 16px; color: #333;">
-        Dear ${customerName},
+        Dear Customer,
       </p>
       <p style="font-size: 16px; color: #333;">
-        We hope this message finds you well. We would like to kindly remind you of an outstanding balance of <b>$${totalOpenBalance}</b> on your orders with Arbora.
-      </p>
-      <p style="font-size: 16px; color: #333;">
-        Please review the details below:
+        We are pleased to provide you with the following product price quote:
       </p>
       <ul style="font-size: 16px; color: #333; padding-left: 20px;">
-        ${orderDetails}
+        ${quoteDetails}
       </ul>
       <p style="font-size: 16px; color: #333;">
-        We kindly request you to settle this balance at your earliest convenience. Should you have any questions or need assistance, please don’t hesitate to reach out to us at <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>.
+        Total Quote Amount: <b>$${totalQuoteAmount}</b>
+      </p>
+      <p style="font-size: 16px; color: #333;">
+        Note: ${noteText}
+      </p>
+      <p style="font-size: 16px; color: #333;">
+        Please let us know if you have any questions or would like to proceed with this quote. Should you need further assistance, feel free to contact us at <a href="mailto:sales@arboraproducts.com">sales@arboraproducts.com</a>.
       </p>
       <p style="font-size: 14px; color: #777; text-align: center; margin-top: 30px;">
-        Thank you for your prompt attention to this matter.
+        Thank you for choosing Arbora.
       </p>
       <p style="font-size: 14px; color: #777; text-align: center;">
         - Arbora Team
@@ -186,30 +184,38 @@ Arbora Team`;
   await sendMail({ to: storePersonEmail, subject, text, html });
 };
 
-
 export const sendEarlyPaymentDueEmail = async ({
   storePersonEmail,
   unpaidOrders,
   customerName,
-  }: {
-    storePersonEmail: string;
-    unpaidOrders: any[];
-    customerName: string;
-  }) => {
+}: {
+  storePersonEmail: string;
+  unpaidOrders: any[];
+  customerName: string;
+}) => {
   console.log("email sending to customer.... ", storePersonEmail);
 
   // Use online-hosted images
   const logoDataUrl = "https://i.ibb.co/spjM17CL/logo.png";
-  const paymentOptionPic1DataUrl = "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
-  const paymentOptionPic2DataUrl = "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
+  const paymentOptionPic1DataUrl =
+    "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
+  const paymentOptionPic2DataUrl =
+    "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
 
   // Assume ProductModel is your Mongoose model for IProduct
   const getProductName = async (productId: string) => {
     try {
-      const product = await ProductModel.findOne({ _id: new Types.ObjectId(productId), isDeleted: false });
+      const product = await ProductModel.findOne({
+        _id: new Types.ObjectId(productId),
+        isDeleted: false,
+      });
       return product?.name || "Unknown Product";
     } catch (error) {
-      console.error("Error fetching product name for productId:", productId, error);
+      console.error(
+        "Error fetching product name for productId:",
+        productId,
+        error
+      );
       return "Unknown Product";
     }
   };
@@ -217,9 +223,16 @@ export const sendEarlyPaymentDueEmail = async ({
   // Process each unpaid order (assuming one email per customer with all relevant orders)
   for (const order of unpaidOrders) {
     const invoiceNumber = order.invoiceNumber;
-    const orderDate = new Date(order.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const orderDate = new Date(order.date).toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
     const poNumber = order.PONumber;
-    const paymentDueDate = new Date(order.paymentDueDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const paymentDueDate = new Date(order.paymentDueDate).toLocaleDateString(
+      "en-US",
+      { month: "2-digit", day: "2-digit", year: "numeric" }
+    );
     const totalPayable = order.totalPayable.toFixed(2);
     const paymentAmountReceived = order.paymentAmountReceived.toFixed(2);
     const openBalance = order.openBalance.toFixed(2);
@@ -241,10 +254,14 @@ Thank you for trusting us as your food distribution partner; we truly appreciate
 This is a friendly reminder that Invoice ${invoiceNumber}, dated ${orderDate}, with PO# ${poNumber}, for a total payable of $${totalPayable}, has an open balance of $${openBalance} (Payment Received: $${paymentAmountReceived}, Discount Given: $${discountGiven}), due on ${paymentDueDate} just 5 days from today. The invoice is attached for your reference.
 
 Product Details:
-${(await Promise.all(order.products.map(async (product: any) => {
-  const productName = await getProductName(product.productId);
-  return `  - ${productName}: Quantity ${product.quantity}`;
-}))).join("\n")}
+${(
+  await Promise.all(
+    order.products.map(async (product: any) => {
+      const productName = await getProductName(product.productId);
+      return `  - ${productName}: Quantity ${product.quantity}`;
+    })
+  )
+).join("\n")}
 
 If you’ve already arranged payment, please disregard this message. Otherwise, we kindly ask that the payment be completed by the due date to avoid any disruption in service.
 Should you have any questions or need clarification, feel free to reach out. We’re happy to assist.
@@ -337,8 +354,6 @@ sales@arboraproducts.com`;
   }
 };
 
-
-
 export const sendCurrentDayPaymentDueEmail = async ({
   storePersonEmail,
   unpaidOrders,
@@ -352,16 +367,25 @@ export const sendCurrentDayPaymentDueEmail = async ({
 
   // Use online-hosted images
   const logoDataUrl = "https://i.ibb.co/spjM17CL/logo.png";
-  const paymentOptionPic1DataUrl = "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
-  const paymentOptionPic2DataUrl = "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
+  const paymentOptionPic1DataUrl =
+    "https://i.ibb.co/qMWKdrYB/payment-Option-Pic1.png";
+  const paymentOptionPic2DataUrl =
+    "https://i.ibb.co/84DPxKzH/payment-Option-Pic2.png";
 
   // Assume ProductModel is your Mongoose model for IProduct
   const getProductName = async (productId: string) => {
     try {
-      const product = await ProductModel.findOne({ _id: new Types.ObjectId(productId), isDeleted: false });
+      const product = await ProductModel.findOne({
+        _id: new Types.ObjectId(productId),
+        isDeleted: false,
+      });
       return product?.name || "Unknown Product";
     } catch (error) {
-      console.error("Error fetching product name for productId:", productId, error);
+      console.error(
+        "Error fetching product name for productId:",
+        productId,
+        error
+      );
       return "Unknown Product";
     }
   };
@@ -369,9 +393,16 @@ export const sendCurrentDayPaymentDueEmail = async ({
   // Process each unpaid order (assuming one email per customer with all relevant orders)
   for (const order of unpaidOrders) {
     const invoiceNumber = order.invoiceNumber;
-    const orderDate = new Date(order.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const orderDate = new Date(order.date).toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
     const poNumber = order.PONumber;
-    const paymentDueDate = new Date(order.paymentDueDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    const paymentDueDate = new Date(order.paymentDueDate).toLocaleDateString(
+      "en-US",
+      { month: "2-digit", day: "2-digit", year: "numeric" }
+    );
     const totalPayable = order.totalPayable.toFixed(2);
     const paymentAmountReceived = order.paymentAmountReceived.toFixed(2);
     const openBalance = order.openBalance.toFixed(2);
@@ -391,16 +422,24 @@ export const sendCurrentDayPaymentDueEmail = async ({
 
 I hope this message finds you well. This is a friendly reminder that Invoice ${invoiceNumber}, dated ${orderDate}, with PO# ${poNumber}, in the amount of $${totalPayable}, has an open balance of $${openBalance} (Payment Received: $${paymentAmountReceived}, Discount Given: $${discountGiven}), is now due.
 
-${reminderNumber > 0 ? `Reminder number: ${reminderNumber}\nPlease note that we have attempted to contact you regarding this overdue payment.` : ''}
+${
+  reminderNumber > 0
+    ? `Reminder number: ${reminderNumber}\nPlease note that we have attempted to contact you regarding this overdue payment.`
+    : ""
+}
 
 Please arrange payment at your earliest convenience to avoid any service interruptions. Payment can be made via Check, Zelle, Credit Card, or ACH. If you have already sent the payment, kindly disregard this notice.
 Should you have any questions or require a copy of the invoice, please don’t hesitate to contact me directly.
 
 Product Details:
-${(await Promise.all(order.products.map(async (product: any) => {
-  const productName = await getProductName(product.productId);
-  return `  - ${productName}: Quantity ${product.quantity}`;
-}))).join("\n")}
+${(
+  await Promise.all(
+    order.products.map(async (product: any) => {
+      const productName = await getProductName(product.productId);
+      return `  - ${productName}: Quantity ${product.quantity}`;
+    })
+  )
+).join("\n")}
 
 Payment Options:
 1. Make Check Payable to Veda Global LLC or Arbora Products:
@@ -431,7 +470,11 @@ sales@arboraproducts.com`;
         <p style="font-size: 16px; color: #333;">
           This is a friendly reminder that Invoice <b>${invoiceNumber}</b>, dated <b>${orderDate}</b>, with PO# <b>${poNumber}</b>, in the amount of <b>$${totalPayable}</b>, has an open balance of <b>$${openBalance}</b> (Payment Received: <b>$${paymentAmountReceived}</b>, Discount Given: <b>$${discountGiven}</b>), is now due.
         </p>
-        ${reminderNumber > 0 ? `<h3 style="font-size: 18px; color: #d32f2f; text-align: center;">Reminder number: ${reminderNumber}</h3><p style="font-size: 16px; color: #333;">Please note that we have attempted to contact you regarding this overdue payment.</p>` : ''}
+        ${
+          reminderNumber > 0
+            ? `<h3 style="font-size: 18px; color: #d32f2f; text-align: center;">Reminder number: ${reminderNumber}</h3><p style="font-size: 16px; color: #333;">Please note that we have attempted to contact you regarding this overdue payment.</p>`
+            : ""
+        }
         <p style="font-size: 16px; color: #333;">
           Please arrange payment at your earliest convenience to avoid any service interruptions. Payment can be made via Check, Zelle, Credit Card, or ACH. If you have already sent the payment, kindly disregard this notice.
         </p>

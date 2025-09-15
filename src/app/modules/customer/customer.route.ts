@@ -38,9 +38,9 @@ router.patch(
 
 
 router.post(
-  "/:id/send-email-for-not-paid-orders",
+  "/:id/send-special-email",
   auth("admin"),
-  CustomerControllers.sendEmailForNotPaidOrders
+  CustomerControllers.sendSpecialEmailWithQuoteController
 );
 
 

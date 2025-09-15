@@ -7,9 +7,9 @@ import { OrderModel } from "../order/order.model";
 import { Types } from "mongoose";
 import { PaymentModel } from "../payment/payment.model";
 import {
-  sendOpenBalanceEmail,
   sendEarlyPaymentDueEmail,
   sendCurrentDayPaymentDueEmail,
+  sendQuoteEmailToCustomer,
 } from "../../utils/sendMail";
 import { generatePdf } from "../../utils/pdfCreate";
 import fs from "fs/promises"; // Use fs.promises for async/await support
@@ -112,31 +112,40 @@ const getAllCustomersFromDB = async () => {
   return result;
 };
 
-const sendEmailForNotPaidOrders = async (customerId: string) => {
+
+
+
+
+
+
+
+const sendSpecialEmailWithQuote = async (customerId: string, quoteList: [{productName: string, quotePrice: number}], noteText: string) => {
   // Fetch customer data
   const customer = await getSingleCustomerFromDB(customerId);
 
-  // Filter orders with open balance greater than 0
-  const unpaidOrders = customer.customerOrders.filter(
-    (order) => order.openBalance > 0
-  );
-
-  if (unpaidOrders.length === 0) {
-    return { storePersonEmail: customer.storePersonEmail, unpaidOrders: [] };
-  }
+  console.log("data: ", customerId, quoteList, noteText)
 
   // Prepare data for email
   const emailData = {
     storePersonEmail: customer.storePersonEmail,
-    unpaidOrders,
-    customerName: customer.storePersonName,
+    quoteList,
+    noteText
   };
 
   // Send email
-  await sendOpenBalanceEmail(emailData);
+  await sendQuoteEmailToCustomer(emailData);
 
   return emailData;
 };
+
+// davethakkar
+
+
+
+
+
+
+
 
 const getSingleCustomerFromDB = async (id: string) => {
   const result = await CustomerModel.findOne({
@@ -205,6 +214,8 @@ const updateCustomerIntoDB = async (
     voidedCheckImage: payload.voidedCheckImage,
     note: payload.note,
   };
+
+  console.log("customer update data received: ",payload)
 
   const updatedCustomer = await CustomerModel.findByIdAndUpdate(
     id,
@@ -536,7 +547,7 @@ export const CustomerServices = {
   getSingleCustomerFromDB,
   updateCustomerIntoDB,
   deleteCustomerIntoDB,
-  sendEmailForNotPaidOrders,
+  sendSpecialEmailWithQuote,
   generatePallet,
   sendPaymentDueReminders,
 };

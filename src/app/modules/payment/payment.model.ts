@@ -7,7 +7,7 @@ const paymentSchema = new Schema<IPayment>(
   {
     storeId: {
       type: Schema.Types.ObjectId,
-      ref: "Store", // Adjust ref based on your store model
+      ref: "Customer", // Adjust ref based on your store model
       required: true,
     },
     forOrderId: [
