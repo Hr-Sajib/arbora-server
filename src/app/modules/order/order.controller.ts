@@ -227,6 +227,24 @@ const getShipToAddressPdf = catchAsync(async (req: Request, res: Response) => {
   res.status(httpStatus.OK).send(pdfBuffer);
 });
 
+
+
+const giveCreditToCustomer = catchAsync(async (req: Request, res: Response) => {
+
+  const result = await OrderServices.giveCreditToCustomerForReturnedProducts(req?.body?.orderId, req?.body?.creditAmount, req?.body?.returnedProductInfo)
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Customer updated successfully",
+    data: result,
+  });
+
+});
+
+
+
+
 export const OrderControllers = {
   createOrder,
   getAllOrders,
@@ -242,6 +260,7 @@ export const OrderControllers = {
   getAllOrdersPDF,
   getDeliverySheetPdf,
   getOrdersByPONumber,
-  getShipToAddressPdf
+  getShipToAddressPdf,
+  giveCreditToCustomer
 };
   

@@ -26,5 +26,7 @@ export interface ICustomer {
     isDeleted: boolean,
     miscellaneousDocImage?: string,
     note?: string
+
+    creditBalance: number;
      
 }

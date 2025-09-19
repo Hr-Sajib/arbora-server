@@ -11,7 +11,7 @@ import {
   generateInvoiceNumber,
   generatePONumber,
 } from "../../utils/generateIds";
-import mongoose, { Types } from "mongoose";
+import mongoose, { startSession, Types } from "mongoose";
 import { PaymentModel } from "../payment/payment.model";
 
 
@@ -1386,6 +1386,104 @@ const generateAllOrdersPdf = async (): Promise<Buffer> => {
 
   return pdfBuffer;
 };
+
+
+
+const giveCreditToCustomerForReturnedProducts = async (
+  orderId: Types.ObjectId,
+  creditAmount: number,
+  returnedProductInfo: { productId: Types.ObjectId; returnedQuantity: number; readdOrNot: boolean }[]
+) => {
+  const session = await startSession();
+  session.startTransaction();
+
+  try {
+    // 1. Validate and fetch the existing order
+    console.log("Starting transaction for orderId:", orderId);
+    const existingOrder = await OrderModel.findById(orderId).session(session);
+    console.log("Fetched order:", existingOrder);
+    if (
+      !existingOrder ||
+      existingOrder.orderStatus !== "completed" ||
+      existingOrder.isDeleted === true
+    ) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "Order not found or deleted or not completed yet!"
+      );
+    }
+
+    const customerStoreId = existingOrder.storeId;
+    console.log("Customer store ID:", customerStoreId);
+
+    // 2. Update customer's credit balance
+    console.log("Updating credit balance with amount:", creditAmount);
+    const updatedStore = await CustomerModel.findByIdAndUpdate(
+      customerStoreId,
+      { $inc: { creditBalance: creditAmount } },
+      { new: true, session }
+    );
+    console.log("Updated store data:", updatedStore);
+    if (!updatedStore) {
+      throw new AppError(httpStatus.NOT_FOUND, "Customer store not found!");
+    }
+
+    // 3. Update order's credit info
+    console.log("Updating order credit info with new amount:", (existingOrder.creditInfo?.amount || 0) + creditAmount);
+    existingOrder.creditInfo = {
+      amount: (existingOrder.creditInfo?.amount || 0) + creditAmount,
+      date: new Date().toISOString(),
+    };
+    await existingOrder.save({ session, validateBeforeSave: false }); // Disable validation
+    console.log("Updated order credit info:", existingOrder.creditInfo);
+
+    // 4. Update product inventory quantities for each returned product
+    const updatedProductQuantities: { [key: string]: number } = {};
+    console.log("Processing returned products:", returnedProductInfo);
+    for (const item of returnedProductInfo) {
+      console.log("Processing item:", item);
+      const { productId, returnedQuantity, readdOrNot } = item;
+      if (readdOrNot) {
+        console.log(`Updating product ${productId} with quantity increment: ${returnedQuantity}`);
+        const updatedProduct = await ProductModel.findByIdAndUpdate(
+          productId,
+          { $inc: { quantity: returnedQuantity } },
+          { new: true, session }
+        );
+        console.log("Updated product data:", updatedProduct);
+        if (!updatedProduct) {
+          throw new AppError(httpStatus.NOT_FOUND, `Product with ID ${productId} not found!`);
+        }
+
+        // Validate that quantity doesn't go negative
+        if (updatedProduct.quantity < 0) {
+          throw new AppError(httpStatus.BAD_REQUEST, `Returned quantity ${returnedQuantity} for product ${productId} exceeds available inventory!`);
+        }
+
+        updatedProductQuantities[productId.toString()] = updatedProduct.quantity;
+        console.log("Updated product quantities map:", updatedProductQuantities);
+      }
+    }
+
+    await session.commitTransaction();
+    console.log("Transaction committed successfully");
+    session.endSession();
+
+    return {
+      success: true,
+      newCreditBalance: updatedStore.creditBalance,
+      orderCreditInfo: existingOrder.creditInfo,
+      updatedProductQuantities: Object.keys(updatedProductQuantities).length > 0 ? updatedProductQuantities : undefined,
+    };
+  } catch (error) {
+    console.error("Transaction failed with error:", error);
+    await session.abortTransaction();
+    session.endSession();
+    throw error instanceof AppError ? error : new AppError(httpStatus.INTERNAL_SERVER_ERROR, "An error occurred while processing the return.");
+  }
+};
+
+
 export const OrderServices = {
   createOrderIntoDB,
   getAllOrdersFromDB,
@@ -1402,4 +1500,5 @@ export const OrderServices = {
   generateDeliverySheetPdf,
   getOrdersByPONumber,
   generateShipToAddressPdf,
+  giveCreditToCustomerForReturnedProducts
 };

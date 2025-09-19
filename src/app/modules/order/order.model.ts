@@ -22,11 +22,17 @@ const orderSchema = new Schema<IOrder>(
     },
 
 
+    creditInfo: {
+      amount: { type: Number, default: 0 },
+      date: { type: String, default: null },
+    },
+
+
     isEmailSentBefore5daysOfDue: { type: Boolean, default: false },
     isReminderPaused: { type: Boolean, default: false },
     reminderNumber: { type: Number, default: 0 },
     
-    
+
     
     isDeleted: { type: Boolean, default: false },
     paymentAmountReceived: { type: Number, default: 0 },

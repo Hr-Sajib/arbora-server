@@ -29,6 +29,11 @@ export interface IOrder {
     discount: number;
   }[];
 
+  creditInfo: {
+    amount: number,
+    date: string
+  }
+
 
   // reminders
   isEmailSentBefore5daysOfDue: boolean;

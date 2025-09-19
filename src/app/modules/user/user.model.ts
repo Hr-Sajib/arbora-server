@@ -12,7 +12,10 @@ const userSchema = new Schema<IUser>(
     firstName: { type: String },
     lastName: { type: String },
     image: { type: String },
-    role: {type: String, required: true, enum:["admin", "salesUser", "warehouseUser", "driver"]}
+    role: {type: String, required: true, enum:["admin", "salesUser", "warehouseUser", "driver"]},
+    // privileges: { type: String, required: true, 
+
+    // }
   },
   {
     timestamps: true,

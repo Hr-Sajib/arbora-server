@@ -10,6 +10,12 @@ router.post(
   OrderControllers.createOrder
 );
 
+router.post(
+  "/giveCredit",
+  auth("admin"),
+  OrderControllers.giveCreditToCustomer
+);
+
 router.get(
   "/allOrdersPdf",
   auth("admin"),

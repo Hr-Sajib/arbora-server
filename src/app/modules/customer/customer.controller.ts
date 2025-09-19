@@ -90,10 +90,6 @@ const deleteCustomer = catchAsync(async (req: Request, res: Response) => {
 
 
 
-
-
-
-
 const sendSpecialEmailWithQuoteController = catchAsync(async (req: Request, res: Response) => {
   const { id: customerId } = req.params;
   const quoteList = req?.body?.quoteList;
@@ -111,14 +107,6 @@ const sendSpecialEmailWithQuoteController = catchAsync(async (req: Request, res:
 
 
 
-
-
-
-
-
-
-
-
 const generatePallet = catchAsync(async (req: Request, res: Response) => {
   const { id: customerId } = req.params;
 
@@ -131,7 +119,6 @@ const generatePallet = catchAsync(async (req: Request, res: Response) => {
 
   res.status(httpStatus.OK).send(pdfBuffer);
 });
-
 
 
 // Get customers xl
@@ -164,6 +151,8 @@ const generateXlforAllCustomers = catchAsync(
 
 
 
+
+
 export const CustomerControllers = {
   createCustomer,
   getAllCustomers,
@@ -172,5 +161,5 @@ export const CustomerControllers = {
   deleteCustomer,
   sendSpecialEmailWithQuoteController,
   generatePallet,
-  generateXlforAllCustomers
+  generateXlforAllCustomers,
 };

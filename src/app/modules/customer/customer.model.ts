@@ -113,6 +113,12 @@ const customerSchema = new Schema<ICustomer>(
       type: String,
       optional: true,
     },
+
+    creditBalance: {
+      type: Number,
+      default: 0
+    },
+
     isDeleted: {
       type: Boolean,
       default: false,
