@@ -124,6 +124,7 @@ const makeCustomerFromProspect = async (id: string) => {
   const customerData: ICustomer = {
     storeName: prospect.storeName,
     storePhone: prospect.storePhone || "N/A",
+    creditBalance: 0,
     storePersonEmail: prospect.storePersonEmail || "N/A",
     salesTaxId: prospect.salesTaxId || "N/A",
     acceptedDeliveryDays: ["monday"], // Default to Monday as an array of valid days
