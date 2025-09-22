@@ -672,9 +672,8 @@ const getSingleOrderFromDB = async (id: string) => {
   return result;
 };
 
-const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
+const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>, role: string) => {
 
-  console.log("order data received: ____________ :")
   // Fetch the existing order to get current products and payment values
   const existingOrder = await OrderModel.findById(id).populate(
     "products.productId"
@@ -754,7 +753,7 @@ const updateOrderIntoDB = async (id: string, payload: Partial<IOrder>) => {
     }
   }
 
-  if(existingOrder.orderStatus !== 'completed' && payload.orderStatus == 'completed' && !payload.deliveryDoc){
+  if(existingOrder.orderStatus !== 'completed' && payload.orderStatus == 'completed' && !payload.deliveryDoc && role !== 'admin'){
       throw new AppError(httpStatus.BAD_REQUEST, "Need to upload signed delivery document while completing an order!");
   }
 

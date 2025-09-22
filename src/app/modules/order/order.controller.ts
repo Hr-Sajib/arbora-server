@@ -81,7 +81,7 @@ const updateOrder = catchAsync(async (req: Request, res: Response) => {
     throw new AppError(httpStatus.NOT_FOUND, "Order not found");
   }
 
-  const result = await OrderServices.updateOrderIntoDB(id, updatePayload);
+  const result = await OrderServices.updateOrderIntoDB(id, updatePayload, req?.user?.role);
 
   sendResponse(res, {
     success: true,
