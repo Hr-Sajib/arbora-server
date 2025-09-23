@@ -127,7 +127,7 @@ const generatePallet = catchAsync(async (req: Request, res: Response) => {
 const generateXlforAllCustomers = catchAsync(
   async (req: Request, res: Response) => {
     console.log("Generating XL for all customers...");
-    const result = await CustomerModel.find();
+    const result = await CustomerModel.find({isDeleted: false});
     console.log("Fetched customers count:", result.length);
 
     // ✅ Check if client wants Excel export

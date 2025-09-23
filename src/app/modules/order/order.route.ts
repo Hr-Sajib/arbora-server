@@ -23,6 +23,12 @@ router.get(
 );
 
 router.get(
+  "/all-orders-excel",
+  auth("admin"),
+  OrderControllers.generateXlforAllOrders
+);
+
+router.get(
   "/",
   auth("admin"),
   OrderControllers.getAllOrders

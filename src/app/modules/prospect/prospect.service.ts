@@ -10,6 +10,7 @@ import { sendMail } from "../../utils/sendMail";
 import * as fs from "node:fs/promises";
 import { CustomerServices } from "../customer/customer.service";
 import { ICustomer } from "../customer/customer.interface";
+import { Types } from "mongoose";
 
 
 const createProspectIntoDB = async (payload: IProspect) => {
@@ -114,6 +115,8 @@ const deleteProspectIntoDB = async (id: string) => {
   return result;
 };
 
+
+
 const makeCustomerFromProspect = async (id: string) => {
   // Fetch the prospect by ID
   const prospect = await ProspectModel.findOne({ _id: id, isDeleted: false }).lean();
@@ -121,46 +124,72 @@ const makeCustomerFromProspect = async (id: string) => {
     throw new AppError(httpStatus.NOT_FOUND, "Prospect not found or already deleted");
   }
 
+  // Map prospect.quotedList to match customer schema
+  const quotedList = Array.isArray(prospect.quotedList)
+    ? prospect.quotedList.map((item, idx) => {
+
+        const mappedItem = {
+          itemNumber: item.itemNumber,
+          itemName: item.itemName,
+          packetSize: item.packetSize,
+          price: item.price,
+        };
+
+        return mappedItem;
+      })
+    : [];
+
+
   const customerData: ICustomer = {
     storeName: prospect.storeName,
-    storePhone: prospect.storePhone || "N/A",
+    storePhone: prospect.storePhone ?? "N/A",
     creditBalance: 0,
-    storePersonEmail: prospect.storePersonEmail || "N/A",
-    salesTaxId: prospect.salesTaxId || "N/A",
-    acceptedDeliveryDays: ["monday"], // Default to Monday as an array of valid days
+    storePersonEmail: prospect.storePersonEmail ?? "N/A",
+    salesTaxId: prospect.salesTaxId ?? "N/A",
+    acceptedDeliveryDays: [
+      "saturday",
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+    ],
     bankACHAccountInfo: "N/A",
-    storePersonName: prospect.storePersonName || "N/A",
-    storePersonPhone: prospect.storePersonPhone || "N/A",
-    billingAddress: prospect.shippingAddress || "N/A",
-    billingState: prospect.shippingState || "N/A",
-    billingZipcode: prospect.shippingZipcode || "N/A",
-    billingCity: prospect.shippingCity || "N/A",
+    storePersonName: prospect.storePersonName ?? "N/A",
+    storePersonPhone: prospect.storePersonPhone ?? "N/A",
+    billingAddress: prospect.shippingAddress ?? "N/A",
+    billingState: prospect.shippingState ?? "N/A",
+    billingZipcode: prospect.shippingZipcode ?? "N/A",
+    billingCity: prospect.shippingCity ?? "N/A",
     isCustomerSourceProspect: true,
-    shippingAddress: prospect.shippingAddress || "N/A",
-    shippingState: prospect.shippingState || "N/A",
-    shippingZipcode: prospect.shippingZipcode || "N/A",
-    shippingCity: prospect.shippingCity || "N/A",
+    shippingAddress: prospect.shippingAddress ?? "N/A",
+    shippingState: prospect.shippingState ?? "N/A",
+    shippingZipcode: prospect.shippingZipcode ?? "N/A",
+    shippingCity: prospect.shippingCity ?? "N/A",
     creditApplication: "N/A",
-    ownerLegalFrontImage: prospect.miscellaneousDocImage || "N/A", // Default to "N/A" if null/undefined
-    ownerLegalBackImage: prospect.miscellaneousDocImage || "N/A", // Default to "N/A" if null/undefined
-    voidedCheckImage: prospect.miscellaneousDocImage || "N/A", // Default to "N/A" if null/undefined
+    ownerLegalFrontImage: prospect.miscellaneousDocImage ?? "N/A",
+    ownerLegalBackImage: prospect.miscellaneousDocImage ?? "N/A",
+    voidedCheckImage: prospect.miscellaneousDocImage ?? "N/A",
     isDeleted: false,
-    miscellaneousDocImage: prospect.miscellaneousDocImage || undefined,
-    note: prospect.note || "N/A",
+    miscellaneousDocImage: prospect.miscellaneousDocImage,
+    note: prospect.note ?? "N/A",
+    quotedList: quotedList,
   };
 
-  // Create the customer using the existing service function
-  const createdCustomer = await CustomerServices.createCustomerIntoDB(customerData);
 
-  // Mark prospect as converted
-  await ProspectModel.findByIdAndUpdate(
-    id,
-    { $set: { status: "converted" } },
-    { new: true }
-  );
+  // Save customer
+  const createdCustomer = await CustomerModel.create(customerData);
+
+  // Update prospect status
+  await ProspectModel.findByIdAndUpdate(id, { $set: { status: "converted" } }, { new: true });
 
   return createdCustomer;
 };
+
+
+
+
 
 
 const sendQuoteToProspect = async (prospectId: string) => {

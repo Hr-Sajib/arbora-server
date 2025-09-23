@@ -5,7 +5,8 @@ import { Request, Response } from "express";
 import { OrderServices } from "./order.service";
 import { OrderModel } from "./order.model";
 import AppError from "../../errors/AppError";
-import { exportGroupedProductsToExcel } from "../../utils/exportToExcel";
+import { exportGroupedProductsToExcel, exportOrdersToExcel } from "../../utils/exportToExcel";
+import { IOrder } from "./order.interface";
 
 const createOrder = catchAsync(async (req: Request, res: Response) => {
   const body = req.body;
@@ -243,6 +244,31 @@ const giveCreditToCustomer = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const generateXlforAllOrders = catchAsync(
+  async (req: Request, res: Response) => {
+    console.log("Generating XL for all orders...");
+    const result = await OrderModel.find({ isDeleted: false });
+    console.log("Fetched orders count:", result.length);
+
+    // ✅ Check if client wants Excel export
+    const shouldDownload = req.query.download === "true";
+    console.log("Should download Excel:", shouldDownload);
+
+    if (shouldDownload) {
+      console.log("Exporting Excel with data:", result.slice(0, 2)); // Log first 2 items for brevity
+      return exportOrdersToExcel(result as IOrder[], res);
+    }
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Orders retrieved successfully",
+      data: result,
+    });
+  }
+);
+
+
 
 
 export const OrderControllers = {
@@ -257,6 +283,7 @@ export const OrderControllers = {
   getBestSellingProductsController,
   getWorstSellingProductsController,
   getChart,
+  generateXlforAllOrders,
   getAllOrdersPDF,
   getDeliverySheetPdf,
   getOrdersByPONumber,

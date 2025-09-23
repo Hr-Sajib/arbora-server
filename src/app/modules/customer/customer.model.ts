@@ -1,8 +1,5 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 import { ICustomer } from "./customer.interface";
-
-
-const urlRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/;
 
 const customerSchema = new Schema<ICustomer>(
   {
@@ -15,24 +12,30 @@ const customerSchema = new Schema<ICustomer>(
     storePhone: {
       type: String,
       required: [true, "Store phone is required"],
-      // match: [phoneRegex, "Invalid store phone format (e.g., +1234567890, (123) 456-7890, 123-456-7890)"],
     },
     storePersonEmail: {
       type: String,
       required: [true, "Store person email is required"],
-      // match: [emailRegex, "Invalid email format (e.g., user@example.com)"],
       lowercase: true,
       trim: true,
     },
     salesTaxId: {
       type: String,
       trim: true,
-      default: "not provided"
+      default: "not provided",
     },
     acceptedDeliveryDays: {
       type: [String],
       enum: {
-        values: ["saturday", "sunday", "monday", "tuesday", "wednesday", "thursday", "friday"],
+        values: [
+          "saturday",
+          "sunday",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+        ],
         message: "{VALUE} is not a valid delivery day",
       },
     },
@@ -43,7 +46,7 @@ const customerSchema = new Schema<ICustomer>(
     bankACHAccountInfo: {
       type: String,
       trim: true,
-      default: "not provided"
+      default: "not provided",
     },
     storePersonName: {
       type: String,
@@ -52,7 +55,6 @@ const customerSchema = new Schema<ICustomer>(
     },
     storePersonPhone: {
       type: String,
-      // match: [phoneRegex, "Invalid store person phone format (e.g., +1234567890, (123) 456-7890, 123-456-7890)"],
     },
     billingAddress: {
       type: String,
@@ -66,7 +68,6 @@ const customerSchema = new Schema<ICustomer>(
     },
     billingZipcode: {
       type: String,
-      // match: [zipcodeRegex, "Invalid billing zipcode format (e.g., 12345 or 12345-6789)"],
     },
     billingCity: {
       type: String,
@@ -85,7 +86,6 @@ const customerSchema = new Schema<ICustomer>(
     },
     shippingZipcode: {
       type: String,
-      // match: [zipcodeRegex, "Invalid shipping zipcode format (e.g., 12345 or 12345-6789)"],
     },
     shippingCity: {
       type: String,
@@ -107,22 +107,38 @@ const customerSchema = new Schema<ICustomer>(
     },
     miscellaneousDocImage: {
       type: String,
-      optional: true,
     },
-    note:{
+    note: {
       type: String,
-      optional: true,
     },
-
     creditBalance: {
       type: Number,
-      default: 0
+      default: 0,
     },
-
     isDeleted: {
       type: Boolean,
       default: false,
     },
+    quotedList: [
+      {
+        itemNumber: {
+          type: String,
+          required: true,
+        },
+        itemName: {
+          type: String,
+          required: true,
+        },
+        packetSize: {
+          type: String,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

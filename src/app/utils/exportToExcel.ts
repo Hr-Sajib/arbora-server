@@ -1,6 +1,9 @@
 import * as XLSX from "xlsx";
 import { Response } from "express";
 import { ICustomer } from "../modules/customer/customer.interface";
+import { IOrder } from "../modules/order/order.interface";
+import { CustomerModel } from "../modules/customer/customer.model";
+import { ProductModel } from "../modules/product/product.model";
 
 export const exportGroupedProductsToExcel = (
   groupedData: any[],
@@ -290,6 +293,174 @@ export const exportCustomersToExcel = (customerData: ICustomer[], res: Response)
   });
 
   res.setHeader("Content-Disposition", "attachment; filename=customers.xlsx");
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.send(buffer);
+};
+
+
+export const exportOrdersToExcel = async (orderData: IOrder[], res: Response) => {
+  const worksheetData: any[][] = [];
+
+  // Add 1st row with header
+  worksheetData.push([
+    "PO Number",
+    "Date",
+    "Invoice Number",
+    "Store Name",
+    "Payment Due Date",
+    "Order Amount",
+    "Shipping Charge",
+    "Discount Given",
+    "Open Balance",
+    "Profit Amount",
+    "Profit Percentage",
+    "Payment Amount Received",
+    "Shipping Date",
+    "Total Payable",
+    "Order Status",
+    "Payment Status",
+    "Delivery Doc",
+    "Products",
+    "Credit Amount",
+    "Last Credit Date",
+  ]);
+
+  // Add 2nd row as empty
+  worksheetData.push(new Array(20).fill("")); // 20 columns based on updated header length
+
+  // Add order data starting from 3rd row
+  for (const order of orderData) {
+    // Fetch Store Name
+    const store = await CustomerModel.findOne({ _id: order.storeId });
+    const storeName = store ? store.storeName : "N/A";
+
+    // Prepare products string with itemNumbers
+    const productsWithItemNumbers = await Promise.all(
+      order.products.map(async (p) => {
+        const product = await ProductModel.findOne({ _id: p.productId });
+        const itemNumber = product ? product.itemNumber : "N/A";
+        return `${itemNumber}: Qty ${p.quantity}, Price $${p.price}, Disc $${p.discount}`;
+      })
+    );
+    const productsString = productsWithItemNumbers.join("; ");
+
+    worksheetData.push([
+      order.PONumber,
+      order.date,
+      order.invoiceNumber,
+      storeName,
+      order.paymentDueDate,
+      order.orderAmount !== undefined && order.orderAmount !== null ? order.orderAmount : "N/A",
+      order.shippingCharge !== undefined && order.shippingCharge !== null ? order.shippingCharge : "N/A",
+      order.discountGiven !== undefined && order.discountGiven !== null ? order.discountGiven : "N/A",
+      order.openBalance !== undefined && order.openBalance !== null ? order.openBalance : "N/A",
+      order.profitAmount !== undefined && order.profitAmount !== null ? order.profitAmount : "N/A",
+      order.profitPercentage !== undefined && order.profitPercentage !== null ? order.profitPercentage : "N/A",
+      order.paymentAmountReceived !== undefined && order.paymentAmountReceived !== null ? order.paymentAmountReceived : "N/A",
+      order.shippingDate || "",
+      order.totalPayable !== undefined && order.totalPayable !== null ? order.totalPayable : "N/A",
+      order.orderStatus,
+      order.paymentStatus,
+      order.deliveryDoc || "",
+      productsString,
+      order.creditInfo?.amount !== undefined && order.creditInfo?.amount !== null ? order.creditInfo.amount : "N/A",
+      order.creditInfo?.date || "",
+    ]);
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+  // Style customization
+  const range = XLSX.utils.decode_range(worksheet["!ref"]!);
+  const boldStyle = {
+    font: {
+      bold: true,
+    },
+  };
+
+  const borderedStyle = {
+    border: {
+      top: { style: "thin", color: { rgb: "000000" } },
+      bottom: { style: "thin", color: { rgb: "000000" } },
+      left: { style: "thin", color: { rgb: "000000" } },
+      right: { style: "thin", color: { rgb: "000000" } },
+    },
+  };
+
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+      let cell = worksheet[cellRef];
+
+      // Initialize cell style if it doesn't exist
+      if (!cell) {
+        cell = { v: worksheetData[R]?.[C] || "" };
+        worksheet[cellRef] = cell;
+      }
+      if (!cell.s) cell.s = {};
+
+      // Bold header row (1st row)
+      if (R === 0) {
+        cell.s = { ...cell.s, ...boldStyle };
+      }
+
+      // Add border to data rows (starting from 3rd row)
+      if (R > 1) {
+        cell.s = {
+          ...cell.s,
+          ...borderedStyle,
+        };
+      }
+    }
+  }
+
+  // Column widths
+  worksheet["!cols"] = [
+    { wch: 20 }, // PO Number
+    { wch: 15 }, // Date
+    { wch: 20 }, // Invoice Number
+    { wch: 25 }, // Store Name
+    { wch: 15 }, // Payment Due Date
+    { wch: 15 }, // Order Amount
+    { wch: 15 }, // Shipping Charge
+    { wch: 15 }, // Discount Given
+    { wch: 15 }, // Open Balance
+    { wch: 15 }, // Profit Amount
+    { wch: 15 }, // Profit Percentage
+    { wch: 20 }, // Payment Amount Received
+    { wch: 15 }, // Shipping Date
+    { wch: 15 }, // Total Payable
+    { wch: 15 }, // Order Status
+    { wch: 15 }, // Payment Status
+    { wch: 30 }, // Delivery Doc
+    { wch: 40 }, // Products
+    { wch: 15 }, // Credit Amount
+    { wch: 15 }, // Last Credit Date
+  ];
+
+  // Row height increase for header and empty row
+  worksheet["!rows"] = worksheetData.map((row, index) => {
+    if (index === 0) { // Header row
+      return { hpt: 25 };
+    } else if (index === 1) { // Empty 2nd row
+      return { hpt: 10 }; // Slightly taller for visibility
+    }
+    return {};
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "All Orders");
+
+  const buffer = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+    cellStyles: true,
+  });
+
+  res.setHeader("Content-Disposition", "attachment; filename=orders.xlsx");
   res.setHeader(
     "Content-Type",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
