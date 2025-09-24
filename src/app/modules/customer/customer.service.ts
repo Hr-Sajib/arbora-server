@@ -341,8 +341,24 @@ const sendPaymentDueReminders = async () => {
 
       for (const order of customerData.customerOrders) {
         const paymentDueDate = new Date(order.paymentDueDate);
-        console.log("Evaluating order:", order._id, "with due date:", paymentDueDate.toISOString(), "openBalance:", order.openBalance);
+        console.log(
+          "Evaluating order:",
+          order._id,
+          "with due date:",
+          paymentDueDate.toISOString(),
+          "openBalance:",
+          order.openBalance,
+          "reminderBlocked:",
+          order.reminderBlocked
+        );
 
+        // 🚨 Skip reminders completely if reminderBlocked is true
+        if (order.reminderBlocked) {
+          console.log("Reminders blocked for order:", order._id);
+          continue;
+        }
+
+        // Case 1: Due in 5 days
         if (
           paymentDueDate.toDateString() === fiveDaysLaterFromTodayDate.toDateString() &&
           order.openBalance > 0 &&
@@ -355,6 +371,7 @@ const sendPaymentDueReminders = async () => {
           console.log("Order due in 5 days, preparing early reminder email for:", order._id);
         }
 
+        // Case 2: Due today
         if (
           paymentDueDate.toDateString() === currentDate.toDateString() &&
           order.openBalance > 0 &&
@@ -365,6 +382,7 @@ const sendPaymentDueReminders = async () => {
           console.log("Order due today, preparing due today email for:", order._id);
         }
 
+        // Case 3: Past due
         if (
           paymentDueDate < currentDate &&
           order.openBalance > 0 &&
@@ -382,6 +400,7 @@ const sendPaymentDueReminders = async () => {
         }
       }
 
+      // Send emails if needed
       if (emailData.unpaidOrders.length > 0) {
         const firstOrder = emailData.unpaidOrders[0];
         const paymentDueDate = new Date(firstOrder.paymentDueDate);
@@ -403,14 +422,14 @@ const sendPaymentDueReminders = async () => {
         console.log("No relevant orders found for customer:", customer._id);
       }
 
-      // Write updated customer data back to the JSON file
+      // Update customer data
       const customerIndex = customers.findIndex((c: any) => c._id === customerData._id);
       if (customerIndex !== -1) {
         customers[customerIndex] = customerData;
       }
     }
 
-    // Write the updated customers array back to the file
+    // Write updated customers back to file
     await fs.writeFile("public/customers.json", JSON.stringify(customers, null, 2));
     console.log("Updated customer data written back to public/customers.json");
 
@@ -421,6 +440,7 @@ const sendPaymentDueReminders = async () => {
     throw error;
   }
 };
+
 
 
 // db func 

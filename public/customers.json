@@ -1,8 +1,8 @@
 [
   {
     "_id": "68926530905bc3a1885101a5",
-    "storeName": "Curry Up Now -  Ekam Gourmet Kitchens 1 LLC",
-    "storePhone": "(214)222-5596",
+    "storeName": "Email Dummy Customer 2 Sajib",
+    "storePhone": "(469)243-6156",
     "storePersonEmail": "hrsajib001@gmail.com",
     "salesTaxId": "32080442521",
     "acceptedDeliveryDays": [
@@ -10,7 +10,7 @@
     ],
     "isCustomerSourceProspect": false,
     "bankACHAccountInfo": "Credit Card in File with Square",
-    "storePersonName": "Dipesh Pandey",
+    "storePersonName": "Sajib",
     "storePersonPhone": "(214)222-5596",
     "billingAddress": "2717 Cross Tigers Road Suite 400",
     "billingState": "TX",
@@ -39,7 +39,7 @@
         "invoiceNumber": "INV-28431",
         "PONumber": "ORD-6",
         "storeId": "68926530905bc3a1885101a5",
-        "paymentDueDate": "2025-09-15",
+        "paymentDueDate": "2025-09-30",
         "totalPayable": 161,
         "shippingDate": "2025-07-24",
         "orderAmount": 151,
@@ -49,9 +49,10 @@
         "paymentAmountReceived": 0,
         "discountGiven": 0,
         "openBalance": 161,
-        "profitAmount": 50.360000000000014,
+        "profitAmount": 50.36,
         "profitPercentage": 50.04,
         "paymentStatus": "unpaid",
+        "reminderBlocked": false,
         "products": [
           {
             "productId": "68926708905bc3a1885101c8",
@@ -70,40 +71,22 @@
             "quantity": 1,
             "discount": 0,
             "_id": "6893fc5f344394515c181776"
-          },
-          {
-            "productId": "689267ea905bc3a1885101d8",
-            "quantity": 1,
-            "discount": 0,
-            "_id": "6893fc5f344394515c181777"
-          },
-          {
-            "productId": "68926894905bc3a1885101e6",
-            "quantity": 1,
-            "discount": 0,
-            "_id": "6893fc5f344394515c181778"
-          },
-          {
-            "productId": "6892683f905bc3a1885101df",
-            "quantity": 1,
-            "discount": 0,
-            "_id": "6893fc5f344394515c181779"
           }
         ],
         "createdAt": "2025-08-07T01:06:46.517Z",
         "updatedAt": "2025-08-07T01:08:25.253Z",
         "__v": 0,
         "isEmailSentBefore5daysOfDue": true,
-        "reminderNumber": 1
+        "reminderNumber": 0
       }
     ],
     "customerPayments": []
   },
   {
     "_id": "68926cfa905bc3a188510262",
-    "storeName": "India Cash & Carry - Irving Knsa Food & More Inc",
-    "storePhone": "(469)243-6156",
-    "storePersonEmail": "hrsajib002@gmail.com",
+    "storeName": "Email Dummy Customer 1 Dave",
+    "storePhone": "(214)222-5596",
+    "storePersonEmail": "davethakkar@gmail.com",
     "salesTaxId": "32091738180",
     "acceptedDeliveryDays": [
       "thursday",
@@ -111,7 +94,7 @@
     ],
     "isCustomerSourceProspect": false,
     "bankACHAccountInfo": "",
-    "storePersonName": "Sai or VISWANATH (KRISHNA) PALEPU",
+    "storePersonName": "Dave",
     "storePersonPhone": "(469)243-6156",
     "billingAddress": "1900 Market Place Blvd",
     "billingState": "TX",
@@ -140,7 +123,7 @@
         "invoiceNumber": "INV-20305",
         "PONumber": "ORD-7",
         "storeId": "68926cfa905bc3a188510262",
-        "paymentDueDate": "2025-07-28",
+        "paymentDueDate": "2025-09-30",
         "totalPayable": 570,
         "shippingDate": "2025-07-14",
         "orderAmount": 540,
@@ -152,7 +135,8 @@
         "openBalance": 0,
         "profitAmount": 180,
         "profitPercentage": 50,
-        "paymentStatus": "paid",
+        "reminderBlocked": false,
+        "paymentStatus": "notPaid",
         "products": [
           {
             "productId": "6883fd11a4aeadc458086873",
@@ -171,19 +155,20 @@
         "invoiceNumber": "INV-38684",
         "PONumber": "ORD-9",
         "storeId": "68926cfa905bc3a188510262",
-        "paymentDueDate": "2025-07-21",
+        "paymentDueDate": "2025-10-01",
         "totalPayable": 132.66,
         "shippingDate": "2025-07-07",
         "orderAmount": 102.66,
         "shippingCharge": 30,
         "orderStatus": "completed",
         "isDeleted": false,
-        "paymentAmountReceived": 132.66,
+        "paymentAmountReceived": 0,
         "discountGiven": 0,
-        "openBalance": 0,
+        "openBalance": 132.66,
         "profitAmount": 34.22,
         "profitPercentage": 50,
-        "paymentStatus": "paid",
+        "reminderBlocked": false,
+        "paymentStatus": "notPaid",
         "products": [
           {
             "productId": "689009cf7b05ea0b76a8e3ca",
@@ -202,7 +187,7 @@
         "invoiceNumber": "INV-37779",
         "PONumber": "ORD-10",
         "storeId": "68926cfa905bc3a188510262",
-        "paymentDueDate": "2025-09-04",
+        "paymentDueDate": "2025-10-10",
         "totalPayable": 760,
         "shippingDate": "2025-08-02",
         "orderAmount": 720,
@@ -214,7 +199,8 @@
         "openBalance": 10,
         "profitAmount": 240,
         "profitPercentage": 50,
-        "paymentStatus": "unpaid",
+        "reminderBlocked": false,
+        "paymentStatus": "paid",
         "products": [
           {
             "productId": "6883fd11a4aeadc458086873",
@@ -226,7 +212,7 @@
         "createdAt": "2025-08-07T01:39:13.997Z",
         "updatedAt": "2025-08-21T02:13:16.874Z",
         "__v": 0,
-        "reminderNumber": 6
+        "reminderNumber": 3
       },
       {
         "_id": "68a6d2c5e172003c14a8800e",
@@ -234,7 +220,7 @@
         "invoiceNumber": "INV-47192",
         "PONumber": "ORD-14",
         "storeId": "68926cfa905bc3a188510262",
-        "paymentDueDate": "2025-08-27",
+        "paymentDueDate": "2025-09-25",
         "totalPayable": 100,
         "shippingDate": "2025-08-21",
         "orderAmount": 100,
@@ -246,6 +232,7 @@
         "openBalance": 100,
         "profitAmount": 33.35000000000001,
         "profitPercentage": 50.04,
+        "reminderBlocked": true,
         "paymentStatus": "notPaid",
         "products": [
           {

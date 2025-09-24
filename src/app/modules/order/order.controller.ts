@@ -250,12 +250,13 @@ const generateXlforAllOrders = catchAsync(
     const result = await OrderModel.find({ isDeleted: false });
     console.log("Fetched orders count:", result.length);
 
+    console.log("User found: ",req.user)
     // ✅ Check if client wants Excel export
     const shouldDownload = req.query.download === "true";
     console.log("Should download Excel:", shouldDownload);
 
     if (shouldDownload) {
-      console.log("Exporting Excel with data:", result.slice(0, 2)); // Log first 2 items for brevity
+      console.log("Exporting Excel with data:", result.slice(0, 2));
       return exportOrdersToExcel(result as IOrder[], res);
     }
 
